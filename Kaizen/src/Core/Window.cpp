@@ -48,38 +48,16 @@ void Window::Init()
         //return -1;
     }
 }
-
-void Window::ClearColor() const
+void Window::PollEvents() const 
 {
-    // Specify the color of the background
-    glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
-}
-void Window::ClearAllBuffer() const
-{
-    // Clean the back buffre and assign the new color to it
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-}
-void Window::ClearColourBuffer() const
-{
-    glClear(GL_COLOR_BUFFER_BIT);
+    // poll for events(keys, mouse, etc.)
+    glfwPollEvents();
 }
 
-void Window::ClearDepthBuffer() const
-{
-    glClear(GL_DEPTH_BUFFER_BIT);
-}
-
-void Window::ClearStencilBuffer() const
-{
-    glClear(GL_STENCIL_BUFFER_BIT);
-}
-
-void Window::UpdateEvents() const
+void Window::SwapBuffers() const
 {
     // spawn the back buffer with the front buffer
     glfwSwapBuffers(m_Window);
-    // poll for events(keys, mouse, etc.)
-    glfwPollEvents();
 }
 
 void Window::SetWindowCursor(bool enable) const

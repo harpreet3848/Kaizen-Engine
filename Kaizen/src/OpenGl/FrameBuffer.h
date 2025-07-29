@@ -7,8 +7,7 @@
 #include <GLFW/glfw3.h>
 
 #include "../Core/EngineConstansts.h"
-
-#include "../Core/Window.h"
+#include "OpenGLRenderer.h"
 
 class FrameBuffer {
 private:
@@ -51,15 +50,12 @@ public:
 		// enable depth testing (is disabled for rendering screen-space quad)
 		glEnable(GL_DEPTH_TEST);
 	}
-	void BindToTexture(bool disableDepth = true, bool disableStensil = true) const {
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		if(disableDepth)
-			glDisable(GL_DEPTH_TEST);
-		if(disableStensil)
-			glDisable(GL_STENCIL_TEST);
+	void BindToTexture() const {
+		
+		UnBind();
 
-		Window::GetInstance().ClearColor(); // set clear color to white (not really necessary actually, since we won't be able to see behind the quad anyways)
-		Window::GetInstance().ClearAllBuffer();
+		OpenglRenderer::ClearColor();
+		OpenglRenderer::ClearAllBuffer();
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);	// use the color attachment texture as the texture of the quad plane

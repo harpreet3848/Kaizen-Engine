@@ -13,11 +13,13 @@ public:
         Scene myScene;
         myScene.Init();
 
-        while (!Window::GetInstance().IsWindowClosed()) {
+        while (!Window::GetInstance().IsWindowClosed()) 
+        {
+            Window::GetInstance().PollEvents();
 
             myScene.Run();
 
-            Window::GetInstance().UpdateEvents();
+            Window::GetInstance().SwapBuffers();
         }
 	}
 };

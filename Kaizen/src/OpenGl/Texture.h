@@ -15,6 +15,7 @@ std::string TextureTypeToString(TextureType textureType);
 struct TextureSettings {
     TextureType textureType;
     bool isGammaCorrection;
+    bool flipTexture;
 };
 
 class Texture {

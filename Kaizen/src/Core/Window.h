@@ -22,12 +22,8 @@ public:
 	GLFWwindow* GetWindow() const;
 
 	void Init();
-	void ClearColor() const;
-	void ClearAllBuffer() const;
-	void ClearColourBuffer() const;
-	void ClearDepthBuffer() const;
-	void ClearStencilBuffer() const;
-	void UpdateEvents() const;
+	void PollEvents() const;
+	void SwapBuffers() const;
 	void SetWindowCursor(bool enable) const;
 	bool IsWindowClosed() const;
 

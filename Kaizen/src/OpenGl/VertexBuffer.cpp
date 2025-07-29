@@ -6,6 +6,7 @@
 
 
 VertexBuffer::VertexBuffer(const void* data, uint32_t size)
+	: m_size(size)
 {
 	// Generate 1 Vertex Buffer Object
 	glGenBuffers(1, &m_RendererID);
@@ -30,6 +31,11 @@ void VertexBuffer::Bind() const
 void VertexBuffer::UnBind() const
 {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+uint32_t VertexBuffer::GetSize() const
+{
+	return m_size;
 }
 
 const BufferLayout& VertexBuffer::GetLayout() const

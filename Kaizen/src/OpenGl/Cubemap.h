@@ -10,7 +10,7 @@ public:
     Cubemap(const std::vector<std::string>& faces, bool gamma = false);
     ~Cubemap();
 
-    void Bind(unsigned int slot = 0) const;
+    void BindTexture(unsigned int slot = 0) const;
     void Unbind() const;
 
 private:

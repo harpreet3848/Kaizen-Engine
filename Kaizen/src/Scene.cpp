@@ -1,4 +1,7 @@
 #include "Scene.h"
+#include "OpenGl/OpenGlConfigurations.h"
+#include "OpenGl/OpenGLRenderer.h"
+#include "OpenGl/ShapeGenerator.h"
 
 Scene::Scene() : camera(glm::vec3(0.0f, 0.0f, 3.0f)),
                 lastX(static_cast<float>(EngineConstants::SCR_WIDTH) / 2.0f),
@@ -7,167 +10,24 @@ Scene::Scene() : camera(glm::vec3(0.0f, 0.0f, 3.0f)),
                 deltaTime(0.0f),
                 lastFrame(0.0f)
 {
+
+}
+
+void Scene::Init() {
+
     Window::GetInstance().SetWindowCursor(false);
     Window::GetInstance().SetCursorPosCallback([this](double xpos, double ypos) {
         this->mouse_callback(xpos, ypos);
         });
-}
-
-void Scene::Init() {
-    float vertices[] = {
-        // positions         // textureCoord     // colors          
-         0.5f,  0.5f, 0.0f,   1.0f, 1.0f,     1.0f, 0.0f, 0.0f, // top right
-         0.5f, -0.5f, 0.0f,   1.0f, 0.0f,     0.0f, 1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,     0.0f, 0.0f, 1.0f, // bottom left
-        -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,      1.0f, 1.0f, 0.0f // top left 
-    };
-    unsigned int indices[] = {  // note that we start from 0!
-        0, 1, 3,  // first Triangle
-        1, 2, 3   // second Triangle
-    };
-    float cubeVertices[] = {
-        // positions          // normals           // texture coords
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
-    };
-    float skyCubeVertices[] = {
-        // positions        
-        -0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-        -0.5f,  0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-
-        -0.5f, -0.5f,  0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f,  0.5f,
-        -0.5f, -0.5f,  0.5f,
-
-        -0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-        -0.5f, -0.5f,  0.5f,
-        -0.5f,  0.5f,  0.5f,
-
-         0.5f,  0.5f,  0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-
-        -0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f, -0.5f,  0.5f,
-        -0.5f, -0.5f,  0.5f,
-        -0.5f, -0.5f, -0.5f,
-
-        -0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f, -0.5f,
-    };
-    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-        // positions   // texCoords
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        -1.0f, -1.0f,  0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-
-        -1.0f,  1.0f,  0.0f, 1.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f
-    };
-
-    stbi_set_flip_vertically_on_load(true);
-
-    ourModel = std::make_unique<Model>("Resources/objects/backpack/backpack.obj", true);
 
     ourShader = std::make_unique<Shader>("shaders/Default_Vertex.glsl", "shaders/MultipleLights_Fragment.glsl");
     lightCubeShader = std::make_unique<Shader>("shaders/Default_Vertex.glsl", "shaders/lightColor_Fragment.glsl");
     shaderSingleColor = std::make_unique<Shader>("shaders/Default_Vertex.glsl", "shaders/stencil_single_color.glsl");
     screenShader = std::make_unique<Shader>("shaders/framebuffers_screen_Vertex.glsl", "shaders/framebuffers_screen_Fragment.glsl");
-    skyboxShader = std::make_unique<Shader>("shaders/skybox_Vertex.glsl", "shaders/skybox_fragment.glsl");
+   
+    ourModel = std::make_unique<Model>("Resources/objects/backpack/backpack.obj", true, true);
 
-    auto skyVertexBuffer = std::make_shared<VertexBuffer>(skyCubeVertices, sizeof(skyCubeVertices));
-    const BufferLayout skyBufferlayout = {
-     {ShaderDataType::Float3, "a_Position",false },
-    };
-
-    skyVertexBuffer->SetLayout(skyBufferlayout);
-
-    auto vertexBuffer = std::make_shared<VertexBuffer>(quadVertices, sizeof(quadVertices));
-
-    const BufferLayout bufferlayout = {
-         {ShaderDataType::Float2, "a_Position",false },
-         { ShaderDataType::Float2, "a_TexCoords",false }
-    };
-
-    vertexBuffer->SetLayout(bufferlayout);
-
-    vertexArray.AddVertexBuffer(skyVertexBuffer);
-    vertexArray.AddVertexBuffer(vertexBuffer);
-
-    vertexArray.Bind();
-
-    // Default cube VertexBuffer
-    auto vertexBufferCube = std::make_shared<VertexBuffer>(cubeVertices, sizeof(cubeVertices));
-
-    const BufferLayout BufferLayoutCube = {
-         {ShaderDataType::Float3, "a_Position",false },
-         { ShaderDataType::Float3, "a_Noraml",false },
-         { ShaderDataType::Float2, "a_TexCoords",false }
-    };
-
-    vertexBufferCube->SetLayout(BufferLayoutCube);
-
-    // Create the vector of strings by calling .string() on each path
-    std::vector<std::string> faceFilepaths
+    std::vector<std::string> facesFilepaths
     {
         std::filesystem::path("Resources/skybox/right.jpg").string(),
         std::filesystem::path("Resources/skybox/left.jpg").string(),
@@ -177,35 +37,16 @@ void Scene::Init() {
         std::filesystem::path("Resources/skybox/back.jpg").string()
     };
 
+    skybox.Init(facesFilepaths);
 
-    cubeMap = std::make_unique<Cubemap>(faceFilepaths, true);
-    // Light VertexArray
-    lightVAO.AddVertexBuffer(vertexBufferCube);
-    lightVAO.Bind();
+    quadVertexArray = ShapeGenerator::GenerateQuad();
+    lightVAO = ShapeGenerator::GenerateCube();
 
+    OpenGLConfigurations::EnableDepthTesting();
 
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_STENCIL_TEST);
-    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
-    glFrontFace(GL_CW);
-
-    skyboxShader->use();
-    skyboxShader->setInt("skybox", 0);
-
-    //Texture containerTexture("Resources/container2.png");
-    //// ---------
-    //Texture containerSpecular("Resources/container2_specular.png");
-
-    //ourShader.use();
-    //ourShader.setInt("texture1", 0);
-    //ourShader.setInt("texture2", 1);
-    //ourShader.use();
-    //ourShader.setInt("material.diffuse", 0);
-    //ourShader.setInt("material.specular", 1);
+    OpenGLConfigurations::EnableFaceCulling();
+    OpenGLConfigurations::SetFaceCullingMode(FaceCullMode::FRONT);
+    OpenGLConfigurations::SetWindingOrder(WindingOder::CLOCKWISE);
 }
 
 void Scene::Run() {
@@ -217,21 +58,20 @@ void Scene::Run() {
 
     frameBuffer.BindToFrameBuffer();
 
+    OpenGLConfigurations::EnableStencilTesting();
     // Enable depth testing for the entire frame by default.
-    glEnable(GL_DEPTH_TEST);
+    OpenGLConfigurations::EnableDepthTesting();
     // Set the stencil operation. This will be used when we draw the object to be outlined.
-    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    OpenGLConfigurations::SetStencilActions(StencilAction::KEEP, StencilAction::KEEP, StencilAction::REPLACE);
 
-
-    Window::GetInstance().ClearColor();
-    Window::GetInstance().ClearAllBuffer();
+    OpenglRenderer::ClearColor();
+    OpenglRenderer::ClearAllBuffer();
 
 
     glm::mat4 view = glm::mat4(1.0f);
     glm::mat4 projection;
 
-    projection = glm::perspective(glm::radians(camera.Zoom), static_cast<float>(EngineConstants::SCR_WIDTH)
-        / static_cast<float>(EngineConstants::SCR_HEIGHT), 0.1f, 100.0f);
+    projection = glm::perspective(glm::radians(camera.Zoom), static_cast<float>(EngineConstants::SCR_WIDTH) / static_cast<float>(EngineConstants::SCR_HEIGHT), 0.1f, 100.0f);
     //camera.ProcessMouseMovement(0, 0, false);
     //camera.Yaw += 180.0f;
     view = camera.GetViewMatrix();
@@ -240,15 +80,15 @@ void Scene::Run() {
     ourShader->setVec3("viewPos", camera.Position);
     ourShader->setFloat("material.shininess", 64.0f);
 
-
     ourShader->setMat4("view", view);
     ourShader->setMat4("projection", projection);
 
+    float lightingScale = 1.0f;
     // directional light
     ourShader->setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-    ourShader->setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-    ourShader->setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-    ourShader->setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+    ourShader->setVec3("dirLight.ambient", glm::vec3(0.05f, 0.05f, 0.05f) * lightingScale);
+    ourShader->setVec3("dirLight.diffuse", glm::vec3(0.8f, 0.8f, 0.8f) * lightingScale);
+    ourShader->setVec3("dirLight.specular", glm::vec3(1.0f, 1.0f, 1.0f) * lightingScale);
     // point light 1
     ourShader->setVec3("pointLights[0].position", pointLightPositions[0]);
     ourShader->setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
@@ -282,8 +122,11 @@ void Scene::Run() {
     shaderSingleColor->setMat4("view", view);
     shaderSingleColor->setMat4("projection", projection);
 
-    glStencilFunc(GL_ALWAYS, 1, 0xFF); // The stencil test should always pass.
-    glStencilMask(0xFF); // Enable writing to the stencil buffer.
+
+    skybox.Draw(view, projection);
+
+    OpenGLConfigurations::SetStencilFunction(StencilAction::ALWAYS, 1, 0xFF);// The stencil test should always pass.
+    OpenGLConfigurations::SetStencilMaskWriteALL();// Enable writing to the stencil buffer.
 
     // Pass 1
     ourShader->use();
@@ -294,15 +137,16 @@ void Scene::Run() {
 
 
     ourModel->Draw(*ourShader);
-    //glDrawArrays(GL_TRIANGLES, 0, 36);
-
 
     // Pass 2
-    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-    glStencilMask(0x00);
-    glDisable(GL_DEPTH_TEST);
+    OpenGLConfigurations::SetStencilFunction(StencilAction::NOT_EQUAL, 1, 0xFF);
+    OpenGLConfigurations::SetStencilMaskReadOnly();
+    OpenGLConfigurations::DisableDepthTesting();
+    //glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    //glStencilMask(0x00);
+    //glDisable(GL_DEPTH_TEST);
 
-    float scaleFactor = 1.02f;
+    float scaleFactor = 1.08f;
     shaderSingleColor->use();
     model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -311,11 +155,13 @@ void Scene::Run() {
     shaderSingleColor->setMat4("model", model);
     ourModel->Draw(*shaderSingleColor);
 
-    //glDrawArrays(GL_TRIANGLES, 0, 36);
+    OpenGLConfigurations::SetStencilMaskWriteALL();
+    OpenGLConfigurations::SetStencilFunction(StencilAction::ALWAYS, 0, 0xFF);
+    OpenGLConfigurations::DisableStencilTesting();
+    OpenGLConfigurations::EnableDepthTesting();
 
-    glStencilMask(0xFF);
-    glStencilFunc(GL_ALWAYS, 1, 0xFF);
-    glEnable(GL_DEPTH_TEST);
+    OpenGLConfigurations::DisableFaceCulling();
+
 
     // also draw the lamp object(s)
     lightCubeShader->use();
@@ -323,7 +169,7 @@ void Scene::Run() {
     lightCubeShader->setMat4("projection", projection);
     lightCubeShader->setMat4("view", view);
 
-    lightVAO.Bind();
+    lightVAO->Bind();
 
     // we now draw as many light bulbs as we have point lights.
     for (unsigned int i = 0; i < 2; i++)
@@ -332,28 +178,17 @@ void Scene::Run() {
         model = glm::translate(model, pointLightPositions[i]);
         model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
         lightCubeShader->setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        OpenglRenderer::DrawIndexed(lightVAO);
+
     }
-
-    // Render sybox
-    glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
-    glDisable(GL_CULL_FACE);
-    skyboxShader->use();
-    skyboxShader->setMat4("view", view);
-    skyboxShader->setMat4("projection", projection);
-    cubeMap->Bind(0);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    glBindVertexArray(0);
-    glDepthFunc(GL_LESS); // set depth function back to default
-    glEnable(GL_CULL_FACE);
-
+    OpenGLConfigurations::EnableFaceCulling();
     // Render ScreenQuad
     screenShader->use();
     screenShader->setInt("screenTexture", 0);
-    glEnable(GL_CULL_FACE);
-    frameBuffer.BindToTexture(true, false);
-    vertexArray.Bind();
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    frameBuffer.BindToTexture();
+    quadVertexArray->Bind();
+    //std::cout << vertexArray.GetVertexBuffers()[0].get()->GetLayout().GetElements()[0].Size << std::endl;
+    OpenglRenderer::DrawIndexed(quadVertexArray);
 }
 
 

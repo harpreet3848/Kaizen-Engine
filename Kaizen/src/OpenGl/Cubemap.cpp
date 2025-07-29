@@ -54,7 +54,7 @@ Cubemap::~Cubemap()
     glDeleteTextures(1, &m_RendererID);
 }
 
-void Cubemap::Bind(unsigned int slot) const
+void Cubemap::BindTexture(unsigned int slot) const
 {
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_RendererID);

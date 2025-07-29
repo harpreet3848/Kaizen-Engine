@@ -26,9 +26,9 @@
 #include "Core/Camera.h"
 #include "Core/EngineConstansts.h"
 #include "OpenGl/FrameBuffer.h"
-#include "OpenGl/Cubemap.h"
 #include "Input.h"
 #include "KeyCodes.h"
+#include "Core/Skybox.h"
 
 
 class Scene {
@@ -46,12 +46,11 @@ private:
     std::unique_ptr<Shader> lightCubeShader;
     std::unique_ptr<Shader> shaderSingleColor;
     std::unique_ptr<Shader> screenShader;
-    std::unique_ptr<Shader> skyboxShader;
-    std::unique_ptr<Cubemap> cubeMap;
 
-    VertexArray vertexArray;
-    VertexArray lightVAO;
+    std::shared_ptr<VertexArray> quadVertexArray;
+    std::shared_ptr<VertexArray> lightVAO;
     FrameBuffer frameBuffer;
+    Skybox skybox;
 
 
     // Camera and Timing
@@ -64,8 +63,8 @@ private:
 
     // positions of the point lights
     glm::vec3 pointLightPositions[2] = {
-          glm::vec3(0.7f,  0.2f,  2.0f),
-          glm::vec3(2.3f, -3.3f, -4.0f),
+          glm::vec3(-2.0f,  0.2f,  1.0f),
+          glm::vec3(2.3f, -1.3f, -4.0f),
     };
 
     // glfw: whenever the mouse moves, this callback is called

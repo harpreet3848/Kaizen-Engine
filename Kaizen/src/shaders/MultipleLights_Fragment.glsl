@@ -1,8 +1,17 @@
 #version 330 core
 
+// Define max textures per type
+#define MAX_DIFFUSE_MAPS 4
+#define MAX_SPECULAR_MAPS 4
+
 struct Material {
-    sampler2D diffuse;
-    sampler2D specular;
+    sampler2D texture_diffuse[MAX_DIFFUSE_MAPS];
+    sampler2D texture_specular[MAX_SPECULAR_MAPS];
+
+    // Add uniforms to hold the count of active textures
+    int active_diffuse_maps;
+    int active_specular_maps;
+
     float shininess;
 };
 
@@ -62,13 +71,18 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
+vec3 CalDiffuseColor();
+vec3 CalSpecularColor();
+
+
 void main()
 {
     vec3 norm = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);  	
-
+    
+    vec3 result;
     // phase 1: Directional light
-    vec3 result = CalcDirLight(dirLight, norm, viewDir);
+    result = CalcDirLight(dirLight, norm, viewDir);
 
     // phase 2: point lights
     for(int i = 0; i < NR_POINT_LIGHTS; i++)
@@ -78,6 +92,7 @@ void main()
     result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
 
     FragColor = vec4(result, 1.0);
+    //FragColor = texture(material.texture_specular1,TexCoords);
 } 
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
@@ -95,9 +110,9 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
     float spec = pow(max(dot(normal, halfwayVec), 0.0), material.shininess);
 
     // combine results
-    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
-    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));
-    vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));
+    vec3 ambient = light.ambient * CalDiffuseColor();
+    vec3 diffuse = light.diffuse * diff * CalDiffuseColor();
+    vec3 specular = light.specular * spec * CalSpecularColor();
 
     return (ambient + diffuse + specular);
 }
@@ -119,9 +134,9 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
 
     // combine results
-    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
-    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));
-    vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));
+    vec3 ambient = light.ambient * CalDiffuseColor();
+    vec3 diffuse = light.diffuse * diff * CalDiffuseColor();
+    vec3 specular = light.specular * spec * CalSpecularColor();
 
     return (ambient + diffuse + specular) * attenuation;
 }
@@ -148,13 +163,32 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
 
     // combine results
-    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
-    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));
-    vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));
+    vec3 ambient = light.ambient * CalDiffuseColor();
+    vec3 diffuse = light.diffuse * diff * CalDiffuseColor();
+    vec3 specular = light.specular * spec * CalSpecularColor();
 
     ambient *= attenuation * intensity;
     diffuse *= attenuation * intensity;
     specular *= attenuation * intensity;
 
     return (ambient + diffuse + specular);
+}
+
+vec3 CalDiffuseColor()
+{
+    vec3 diffuseColor = vec3(1.0); 
+    for(int i = 0; i < material.active_diffuse_maps; i++)
+    {
+        diffuseColor *= texture(material.texture_diffuse[i], TexCoords).rgb;
+    }
+    return diffuseColor;
+}
+vec3 CalSpecularColor()
+{
+    vec3 specularColor = vec3(1.0);
+    for(int i = 0; i < material.active_specular_maps; i++)
+    {
+        specularColor *= texture(material.texture_specular[i], TexCoords).rgb;
+    }
+    return specularColor;
 }

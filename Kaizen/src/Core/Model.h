@@ -8,7 +8,7 @@
 #include "../OpenGl/Texture.h"        
 
 
-unsigned int TextureFromFile(const char* path, const std::string& directory, bool gamma, TextureType textureType);
+unsigned int TextureFromFile(const char* path, const std::string& directory, TextureType textureType, bool gamma, bool flip);
 
 class Model
 {
@@ -17,13 +17,14 @@ public:
     std::vector<std::unique_ptr<Mesh>> meshes;
     std::vector<TextureData> textures_loaded;   // to avoid loading duplicates
     std::string directory;
-    bool gammaCorrection;
-
-    Model(const std::string& path, bool gamma = false);
+    Model(const std::string& path, bool gamma = false, bool flipTexture = false);
 
     void Draw(Shader& shader);
 
 private:
+    bool gammaCorrection;
+    bool flipTextures;
+
     void loadModel(const std::string& path);
     void processNode(aiNode* node, const aiScene* scene);
     std::unique_ptr<Mesh> processMesh(aiMesh* mesh, const aiScene* scene);

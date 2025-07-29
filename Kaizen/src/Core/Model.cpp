@@ -10,8 +10,8 @@
 #include <iostream>
 #include <cstring>   // for std::strcmp
 
-Model::Model(const std::string& path, bool gamma)
-    : gammaCorrection(gamma)
+Model::Model(const std::string& path, bool gamma, bool flipTexture)
+    : gammaCorrection(gamma), flipTextures(flipTexture)
 {
     loadModel(path);
 }
@@ -26,11 +26,18 @@ void Model::loadModel(const std::string& path)
 {
     // read file via ASSIMP
     Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(path,
-        aiProcess_Triangulate |
-        aiProcess_GenSmoothNormals |
-        aiProcess_FlipUVs |
-        aiProcess_CalcTangentSpace);
+
+    // Set post-processing flags. These are crucial!
+    const unsigned int flags = 
+        aiProcess_Triangulate |             // Ensure all faces are triangles
+        aiProcess_GenSmoothNormals |        // Generate smooth normals if they don't exist
+        aiProcess_CalcTangentSpace |        // Calculate tangents and bitangents for normal mapping
+        aiProcess_JoinIdenticalVertices |   // Optimizes the mesh by joining identical vertices
+        aiProcess_PreTransformVertices |    // Bakes all node transformations into the vertex data
+        aiProcess_FlipUVs;                  // Flips texture coordinates vertically (often needed for OpenGL)
+
+
+    const aiScene* scene = importer.ReadFile(path, flags);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
@@ -171,7 +178,7 @@ std::vector<TextureData> Model::loadMaterialTextures(aiMaterial* mat, aiTextureT
         {
             // if texture hasn't been loaded already, load it
             TextureData tex;
-            tex.id = TextureFromFile(str.C_Str(), directory, gammaCorrection, typeName);
+            tex.id = TextureFromFile(str.C_Str(), directory, typeName, gammaCorrection, flipTextures);
             tex.type = typeName;
             tex.path = str.C_Str();
             textures.push_back(tex);
@@ -181,51 +188,16 @@ std::vector<TextureData> Model::loadMaterialTextures(aiMaterial* mat, aiTextureT
     return textures;
 }
 // loads a texture from disk and returns the OpenGL texture ID
-unsigned int TextureFromFile(const char* path, const std::string& directory, bool gamma, TextureType textureType)
+unsigned int TextureFromFile(const char* path, const std::string& directory,TextureType textureType, bool gamma, bool flip)
 {
     std::string filename = std::string(path);
     filename = directory + '/' + filename;
 
-    unsigned int textureID;
-    glGenTextures(1, &textureID);
+    TextureSettings textureSettings{};
+    textureSettings.isGammaCorrection = gamma;
+    textureSettings.textureType = textureType;
+    textureSettings.flipTexture = flip;
 
-    int width, height, nrChannels;
-    unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrChannels, 0);
-    if (data)
-    {
-
-        // 4. Determine format
-        GLenum internalFormat = 0;
-        if (textureType == TextureType::diffuse && gamma) {
-            internalFormat = (nrChannels == 4) ? GL_SRGB_ALPHA : GL_SRGB;
-        }
-        else {
-            if (nrChannels == 4) internalFormat = GL_RGBA;
-            else if (nrChannels == 3) internalFormat = GL_RGB;
-            else if (nrChannels == 1) internalFormat = GL_RED;
-        }
-
-        GLenum dataFormat = 0;
-        if (nrChannels == 4) dataFormat = GL_RGBA;
-        else if (nrChannels == 3) dataFormat = GL_RGB;
-        else if (nrChannels == 1) dataFormat = GL_RED;
-
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        stbi_image_free(data);
-    }
-    else
-    {
-        std::cerr << "Texture failed to load at path: " << path << "\n";
-        stbi_image_free(data);
-    }
-
-    return textureID;
+    Texture texture{ filename.c_str(), textureSettings };
+    return texture.GetId();
 }

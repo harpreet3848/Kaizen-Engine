@@ -7,7 +7,8 @@ enum TextureType {
     diffuse,
     specular,
     normal,
-    height
+    height,
+    emission
 };
 
 std::string TextureTypeToString(TextureType textureType);

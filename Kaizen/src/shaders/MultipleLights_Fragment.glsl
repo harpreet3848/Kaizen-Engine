@@ -3,14 +3,18 @@
 // Define max textures per type
 #define MAX_DIFFUSE_MAPS 4
 #define MAX_SPECULAR_MAPS 4
+#define MAX_EMISSION_MAPS 4
+
 
 struct Material {
     sampler2D texture_diffuse[MAX_DIFFUSE_MAPS];
     sampler2D texture_specular[MAX_SPECULAR_MAPS];
+    sampler2D texture_emission[MAX_EMISSION_MAPS];
 
     // Add uniforms to hold the count of active textures
     int active_diffuse_maps;
     int active_specular_maps;
+    int active_emission_maps;
 
     float shininess;
 };
@@ -80,7 +84,7 @@ void main()
     vec3 norm = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);  	
     
-    vec3 result;
+    vec3 result = vec3(0.0);
     // phase 1: Directional light
     result = CalcDirLight(dirLight, norm, viewDir);
 
@@ -91,8 +95,9 @@ void main()
     // phase 3: spot light
     result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
 
-    FragColor = vec4(result, 1.0);
-    //FragColor = texture(material.texture_specular1,TexCoords);
+    vec3 emission = texture(material.texture_emission[0], TexCoords).rgb;
+
+    FragColor = vec4(result + emission, 1.0);
 } 
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
@@ -186,6 +191,7 @@ vec3 CalDiffuseColor()
 vec3 CalSpecularColor()
 {
     vec3 specularColor = vec3(1.0);
+    
     for(int i = 0; i < material.active_specular_maps; i++)
     {
         specularColor *= texture(material.texture_specular[i], TexCoords).rgb;

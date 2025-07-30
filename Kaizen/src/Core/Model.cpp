@@ -138,6 +138,7 @@ std::unique_ptr<Mesh> Model::processMesh(aiMesh* mesh, const aiScene* scene)
     // specular: texture_specularN
     // normal: texture_normalN
 
+    
     // diffuse
     auto diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, TextureType::diffuse);
     textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
@@ -150,6 +151,9 @@ std::unique_ptr<Mesh> Model::processMesh(aiMesh* mesh, const aiScene* scene)
     // height
     auto heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, TextureType::height);
     textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+
+    auto emissionMaps = loadMaterialTextures(material, aiTextureType_EMISSIVE, TextureType::emission);
+    textures.insert(textures.end(), emissionMaps.begin(), emissionMaps.end());
 
     return  std::make_unique<Mesh>(vertices, indices, textures);
 }

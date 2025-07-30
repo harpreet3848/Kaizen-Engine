@@ -14,6 +14,7 @@ void Mesh::Draw(Shader& shader)
     unsigned int specularNr = 0;
     unsigned int normalNr = 0;
     unsigned int heightNr = 0;
+    unsigned int emissionNr = 0;
 
     for (unsigned int i = 0; i < _textures.size(); i++)
     {
@@ -27,6 +28,7 @@ void Mesh::Draw(Shader& shader)
         else if (tex.type == TextureType::specular) number = std::to_string(specularNr++); // transfer unsigned int to string
         else if (tex.type == TextureType::normal)   number = std::to_string(normalNr++);  // transfer unsigned int to string
         else if (tex.type == TextureType::height)   number = std::to_string(heightNr++); // transfer unsigned int to string
+        else if (tex.type == TextureType::emission) number = std::to_string(emissionNr++);
 
         std::string uniformName = "material." + TextureTypeToString(tex.type) + "[" + number + "]";
 
@@ -37,6 +39,7 @@ void Mesh::Draw(Shader& shader)
     }
     glUniform1i(glGetUniformLocation(shader.ID, "material.active_diffuse_maps"), diffuseNr); // pass Length
     glUniform1i(glGetUniformLocation(shader.ID, "material.active_specular_maps"), specularNr); // pass Length
+    glUniform1i(glGetUniformLocation(shader.ID, "material.active_emission_maps"), emissionNr); // pass Length
     // draw mesh
     _vertexArray.Bind();
     glDrawElements(

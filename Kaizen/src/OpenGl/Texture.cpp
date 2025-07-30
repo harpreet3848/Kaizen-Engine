@@ -17,6 +17,8 @@ std::string TextureTypeToString(TextureType textureType)
         return "texture_normal";
     case height:
         return "texture_height";
+    case emission:
+        return "texture_emission";
     }
     return "";
 }

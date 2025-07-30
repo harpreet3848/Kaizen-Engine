@@ -25,7 +25,7 @@ void Scene::Init() {
     shaderSingleColor = std::make_unique<Shader>("shaders/Default_Vertex.glsl", "shaders/stencil_single_color.glsl");
     screenShader = std::make_unique<Shader>("shaders/framebuffers_screen_Vertex.glsl", "shaders/framebuffers_screen_Fragment.glsl");
    
-    ourModel = std::make_unique<Model>("Resources/objects/backpack/backpack.obj", true, true);
+    ourModel = std::make_unique<Model>("Resources/objects/UfoBasic/ufo.obj", true, false);
 
     std::vector<std::string> facesFilepaths
     {
@@ -128,11 +128,18 @@ void Scene::Run() {
     OpenGLConfigurations::SetStencilFunction(StencilAction::ALWAYS, 1, 0xFF);// The stencil test should always pass.
     OpenGLConfigurations::SetStencilMaskWriteALL();// Enable writing to the stencil buffer.
 
+
+    float rotationSpeed = 200.0f;
+    float floatingSpeed = 5.0f;
+    float bendMulti = 6.0f;
+
     // Pass 1
     ourShader->use();
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    model = glm::rotate(model, static_cast<float>(glm::radians(glfwGetTime() * rotationSpeed)), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::rotate(model, static_cast<float>(glm::radians(glm::sin(glfwGetTime() * floatingSpeed) * bendMulti)), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(0.01f, 0.01f, 0.01f));
     ourShader->setMat4("model", model);
 
 
@@ -146,10 +153,12 @@ void Scene::Run() {
     //glStencilMask(0x00);
     //glDisable(GL_DEPTH_TEST);
 
-    float scaleFactor = 1.08f;
+    float scaleFactor = 0.0108f;
     shaderSingleColor->use();
     model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, static_cast<float>(glm::radians(glfwGetTime() * rotationSpeed)), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::rotate(model, static_cast<float>(glm::radians(glm::sin(glfwGetTime() * floatingSpeed) * bendMulti)), glm::vec3(1.0f, 0.0f, 0.0f));
     model = glm::scale(model, glm::vec3(scaleFactor, scaleFactor, scaleFactor));
 
     shaderSingleColor->setMat4("model", model);

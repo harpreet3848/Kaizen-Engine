@@ -2,7 +2,6 @@
 
 void Skybox::Init(const std::vector<std::string>& facesFilepaths)
 {
-
     float skyCubeVertices[] =
     {
         // positions        
@@ -67,7 +66,6 @@ void Skybox::Init(const std::vector<std::string>& facesFilepaths)
 
     skyboxShader->use();
     skyboxShader->setInt("skybox", 0);
-
 }
 
 void Skybox::Draw(glm::mat4 view, glm::mat4 projection)

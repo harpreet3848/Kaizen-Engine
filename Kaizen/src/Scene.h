@@ -29,6 +29,7 @@
 #include "Input.h"
 #include "KeyCodes.h"
 #include "Core/Skybox.h"
+#include "Core/LightBindings.h"
 
 
 class Scene {
@@ -41,17 +42,22 @@ public:
 
 private:
 
-    std::unique_ptr<Model> ourModel;
-    std::unique_ptr<Shader> ourShader;
-    std::unique_ptr<Shader> lightCubeShader;
-    std::unique_ptr<Shader> shaderSingleColor;
-    std::unique_ptr<Shader> screenShader;
+    Ref<Model> groundModel;
+    Ref<Model> ourModel;
+    Ref<Shader> ourShader;
+    Ref<Shader> lightCubeShader;
+    Ref<Shader> screenShader;
 
-    std::shared_ptr<VertexArray> quadVertexArray;
-    std::shared_ptr<VertexArray> lightVAO;
+    Ref<VertexArray> quadVertexArray;
+    Ref<VertexArray> lightVAO;
+
+
+    std::vector<LightComponent> directionalLights;
+    std::vector<LightComponent> pointLights;
+    std::vector<LightComponent> spotLights;
+
     FrameBuffer frameBuffer;
     Skybox skybox;
-
 
     // Camera and Timing
     Camera camera;
@@ -62,13 +68,12 @@ private:
     float lastFrame;
 
     // positions of the point lights
-    glm::vec3 pointLightPositions[2] = {
+    glm::vec3 pointLightPositions[1] = {
           glm::vec3(-2.0f,  0.2f,  1.0f),
-          glm::vec3(2.3f, -1.3f, -4.0f),
     };
 
     // glfw: whenever the mouse moves, this callback is called
-    void mouse_callback(double xposIn, double yposIn);
-    void processInput();
+    void MouseCallback(double xposIn, double yposIn);
+    void ProcessInput();
 };
 

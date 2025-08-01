@@ -52,5 +52,5 @@ public:
     void ProcessMouseScroll(float yoffset);
 private:
 
-    void updateCameraVectors();
+    void UpdateCameraVectors();
 }; 

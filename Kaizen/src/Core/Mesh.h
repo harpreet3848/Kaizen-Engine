@@ -6,11 +6,11 @@
 #include <memory>
 #include <glm/glm.hpp>
 
-#include "../OpenGl/VertexArray.h"
-#include "../OpenGl/VertexBuffer.h"
-#include "../OpenGl/IndexBuffer.h"
-#include "../OpenGl/Shader.h"
-#include "../OpenGl/Texture.h"
+#include "OpenGl/VertexArray.h"
+#include "OpenGl/VertexBuffer.h"
+#include "OpenGl/IndexBuffer.h"
+#include "OpenGl/Shader.h"
+#include "OpenGl/Texture.h"
 
 
 #define MAX_BONE_INFLUENCE 4
@@ -26,7 +26,7 @@ struct Vertex {
 };
 
 struct TextureData {
-    unsigned int id = 0;
+    uint32_t id = 0;
     TextureType  type;
     std::string  path;
 };
@@ -34,14 +34,14 @@ struct TextureData {
 class Mesh {
 public:
     Mesh(std::vector<Vertex>      vertices,
-        std::vector<unsigned int> indices,
+        std::vector<uint32_t> indices,
         std::vector<TextureData>  textures);
     void Draw(Shader& shader);
 
 private:
     // mesh data
     std::vector<Vertex>       _vertices;
-    std::vector<unsigned int> _indices;
+    std::vector<uint32_t> _indices;
     std::vector<TextureData>  _textures;
 
     VertexArray               _vertexArray;

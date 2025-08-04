@@ -7,7 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../OpenGl/Shader.h"
+#include "OpenGl/Shader.h"
 #include "Core.h"
 
 enum class LightType {
@@ -41,9 +41,9 @@ struct LightComponent
 class LightBindings 
 {
 public:
-    static void SetDirectionalLight(Ref<Shader> shader,const LightComponent& lightComponenet);
+    static void SetDirectionalLight(Ref<Shader>& shader, const  Ref<LightComponent>& lightComponenet);
 
-    static void SetPointLight(Ref<Shader> shader, const LightComponent& lightComponenet, const size_t index);
+    static void SetPointLight(Ref<Shader>& shader, const  Ref<LightComponent>& lightComponenet, const size_t index);
 
-    static void SetSpotLight(Ref<Shader> shader, const LightComponent& lightComponenet, const size_t index);
+    static void SetSpotLight(Ref<Shader>& shader, const  Ref<LightComponent>& lightComponenet, const size_t index);
 };

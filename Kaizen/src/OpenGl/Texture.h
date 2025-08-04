@@ -4,19 +4,52 @@
 #include <string>
 
 enum TextureType {
-    diffuse,
-    specular,
-    normal,
-    height,
-    emission
+    Diffuse,
+    Specular,
+    Normal,
+    Height,
+    Emission
+};
+
+enum class TextureWrapMode {
+    Repeat = GL_REPEAT,
+    MirroredRepeat = GL_MIRRORED_REPEAT,
+    ClampToEdge = GL_CLAMP_TO_EDGE,
+    ClampToBorder = GL_CLAMP_TO_BORDER
+};
+
+enum class TextureFilterMode {
+    Nearest = GL_NEAREST,
+    Linear = GL_LINEAR,
+    NearestMipmapNearest = GL_NEAREST_MIPMAP_NEAREST,
+    LinearMipmapNearest = GL_LINEAR_MIPMAP_NEAREST,
+    NearestMipmapLinear = GL_NEAREST_MIPMAP_LINEAR,
+    LinearMipmapLinear = GL_LINEAR_MIPMAP_LINEAR
 };
 
 std::string TextureTypeToString(TextureType textureType);
 
 struct TextureSettings {
     TextureType textureType;
+
+    TextureWrapMode wrapU;
+    TextureWrapMode wrapV;
+
+    TextureFilterMode minFilter;
+    TextureFilterMode magFilter;
+
     bool isGammaCorrection;
     bool flipTexture;
+
+    TextureSettings() :
+        textureType(TextureType::Diffuse),
+        isGammaCorrection(false),
+        flipTexture(true),
+        wrapU(TextureWrapMode::Repeat),
+        wrapV(TextureWrapMode::Repeat),
+        minFilter(TextureFilterMode::LinearMipmapLinear),
+        magFilter(TextureFilterMode::Linear) {
+    }
 };
 
 class Texture {

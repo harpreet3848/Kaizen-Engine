@@ -30,6 +30,7 @@
 #include "KeyCodes.h"
 #include "Core/Skybox.h"
 #include "Core/LightBindings.h"
+#include "Core/LightManager.h"
 
 
 class Scene {
@@ -45,16 +46,11 @@ private:
     Ref<Model> groundModel;
     Ref<Model> ourModel;
     Ref<Shader> ourShader;
-    Ref<Shader> lightCubeShader;
     Ref<Shader> screenShader;
 
     Ref<VertexArray> quadVertexArray;
-    Ref<VertexArray> lightVAO;
 
-
-    std::vector<LightComponent> directionalLights;
-    std::vector<LightComponent> pointLights;
-    std::vector<LightComponent> spotLights;
+    Ref<LightManager> lightManager;
 
     FrameBuffer frameBuffer;
     Skybox skybox;

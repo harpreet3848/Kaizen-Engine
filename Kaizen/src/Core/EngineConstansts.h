@@ -2,6 +2,6 @@
 
 namespace EngineConstants {
 	// settings
-	constexpr unsigned int SCR_WIDTH = 1280;
-	constexpr unsigned int SCR_HEIGHT = 720;
+	constexpr uint32_t SCR_WIDTH = 1280;
+	constexpr uint32_t SCR_HEIGHT = 720;
 }

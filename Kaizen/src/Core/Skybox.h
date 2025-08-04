@@ -1,12 +1,12 @@
 #pragma once
 
-#include "../OpenGl/VertexArray.h"
+#include "OpenGl/VertexArray.h"
 
-#include "../OpenGl/VertexBuffer.h"
-#include "../OpenGl/Shader.h"
-#include "../OpenGl/Cubemap.h"
-#include "../OpenGl/OpenGLConfigurations.h"
-#include "../OpenGl/OpenGLRenderer.h"
+#include "OpenGl/VertexBuffer.h"
+#include "OpenGl/Shader.h"
+#include "OpenGl/Cubemap.h"
+#include "OpenGl/OpenGLConfigurations.h"
+#include "OpenGl/OpenGLRenderer.h"
 
 class Skybox 
 {

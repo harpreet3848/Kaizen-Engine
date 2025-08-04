@@ -13,7 +13,7 @@ Cubemap::Cubemap(const std::vector<std::string>& faces, bool gamma)
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_RendererID);
 
     int width, height, nrChannels;
-    for (unsigned int i = 0; i < faces.size(); i++)
+    for (uint32_t i = 0; i < faces.size(); i++)
     {
         unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
         if (data)
@@ -54,7 +54,7 @@ Cubemap::~Cubemap()
     glDeleteTextures(1, &m_RendererID);
 }
 
-void Cubemap::BindTexture(unsigned int slot) const
+void Cubemap::BindTexture(uint32_t slot) const
 {
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_RendererID);

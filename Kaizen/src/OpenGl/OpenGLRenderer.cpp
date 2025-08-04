@@ -27,7 +27,7 @@ void OpenglRenderer::ClearStencilBuffer()
 {
     glClear(GL_STENCIL_BUFFER_BIT);
 }
-void OpenglRenderer::DrawTriangles(const unsigned numberOfVertices)
+void OpenglRenderer::DrawTriangles(const uint32_t numberOfVertices)
 {
 	glDrawArrays(GL_TRIANGLES, 0, numberOfVertices);
 }

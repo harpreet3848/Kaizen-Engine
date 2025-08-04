@@ -2,6 +2,7 @@
 #include "OpenGl/OpenGlConfigurations.h"
 #include "OpenGl/OpenGLRenderer.h"
 #include "OpenGl/ShapeGenerator.h"
+#include <imgui.h>
 
 
 Scene::Scene() : camera(glm::vec3(0.0f, 0.0f, 3.0f)),
@@ -16,10 +17,10 @@ Scene::Scene() : camera(glm::vec3(0.0f, 0.0f, 3.0f)),
 
 void Scene::Init() {
 
-    Window::GetInstance().SetWindowCursor(false);
-    Window::GetInstance().SetCursorPosCallback([this](double xpos, double ypos) {
-        this->MouseCallback(xpos, ypos);
-        });
+    //Window::GetInstance().SetWindowCursor(false);
+    //Window::GetInstance().SetCursorPosCallback([this](double xpos, double ypos) {
+    //    this->MouseCallback(xpos, ypos);
+    //    });
 
     OpenGLConfigurations::EnableFaceCulling();
     OpenGLConfigurations::SetFaceCullingMode(FaceCullMode::FRONT);
@@ -27,7 +28,6 @@ void Scene::Init() {
     
 
     ourShader = std::make_shared<Shader>("shaders/Default_Vertex.glsl", "shaders/MultipleLights_Fragment.glsl");
-    lightCubeShader = std::make_shared<Shader>("shaders/Default_Vertex.glsl", "shaders/lightColor_Fragment.glsl");
     screenShader = std::make_shared<Shader>("shaders/framebuffers_screen_Vertex.glsl", "shaders/framebuffers_screen_Fragment.glsl");
    
     ourModel = std::make_shared<Model>("Resources/objects/medievalCastle/medievalCastle.obj", true, false);
@@ -47,62 +47,62 @@ void Scene::Init() {
     skybox.Init(facesFilepaths);
 
     quadVertexArray = ShapeGenerator::GenerateQuad();
-    lightVAO = ShapeGenerator::GenerateCube();
+
+    lightManager = std::make_shared<LightManager>();
+
+    auto directionalLight = std::make_shared<LightComponent>();
+    directionalLight->type = LightType::Directional;
+    directionalLight->color = glm::vec3(1.0f, 1.0f, 1.0f);
+    directionalLight->direction = glm::vec3(-0.2f, -1.0f, -0.3f);
+    directionalLight->ambientIntensity = 0.05f;
+    directionalLight->diffuseIntensity = 1.0f;
+    directionalLight->specularIntensity = 1.0f;
+
+    auto pointLight = std::make_shared<LightComponent>();
+    pointLight->type = LightType::Point;
+    pointLight->color = glm::vec3(1.0f, 0.0f, 0.0f); // Red light
+    pointLight->position = glm::vec3((-2.0f, 0.2f, 1.0f));
+    pointLight->ambientIntensity = 0.05f;
+    pointLight->diffuseIntensity = 0.8f;
+    pointLight->specularIntensity = 1.0f;
+    pointLight->constant = 1.0f;
+    pointLight->linear = 0.09f;
+    pointLight->quadratic = 0.032f;
 
 
-    LightComponent directionalLight{};
-    directionalLight.color = glm::vec3(1.0f, 1.0f, 1.0f);
-    directionalLight.direction = glm::vec3(- 0.2f, -1.0f, -0.3f);
-    directionalLight.ambientIntensity = 0.05f;
-    directionalLight.diffuseIntensity = 1.0f;
-    directionalLight.specularIntensity = 1.0f;
-    
-    directionalLights.push_back(directionalLight);
 
+    auto pointLight2 = std::make_shared<LightComponent>();
+    pointLight2->type = LightType::Point;
+    pointLight2->color = glm::vec3(1.0f, 0.0f, 0.0f); // Red light
+    pointLight2->position = glm::vec3(2.0f, 0.2f, 1.0f);
+    pointLight2->ambientIntensity = 0.05f;
+    pointLight2->diffuseIntensity = 0.8f;
+    pointLight2->specularIntensity = 1.0f;
+    pointLight2->constant = 1.0f;
+    pointLight2->linear = 0.09f;
+    pointLight2->quadratic = 0.032f;
 
-    LightComponent pointLight{};
-    pointLight.color = glm::vec3(1.0f, 0.0f, 0.0f); // Red light
-    pointLight.position = pointLightPositions[0];
-    pointLight.ambientIntensity = 0.05f;
-    pointLight.diffuseIntensity = 0.8f;
-    pointLight.specularIntensity = 1.0f;
-    pointLight.constant = 1.0f;
-    pointLight.linear = 0.09f;
-    pointLight.quadratic = 0.032f;
+    auto spotLight = std::make_shared<LightComponent>();
+    spotLight->type = LightType::Spot;
+    spotLight->color = glm::vec3(0.0f, 1.0f, 0.0f); // Green light
+    spotLight->position = camera.Position;
+    spotLight->direction = camera.Front;
+    spotLight->ambientIntensity = 0.0f;
+    spotLight->diffuseIntensity = 1.0f;
+    spotLight->specularIntensity = 1.0f;
+    spotLight->constant = 1.0f;
+    spotLight->linear = 0.09f;
+    spotLight->quadratic = 0.032f;
+    spotLight->cutOff = 12.5f;
+    spotLight->outerCutOff = 15.0f;
 
-    pointLights.push_back(pointLight);
+    lightManager->AddDirectionalLight(directionalLight);
+    lightManager->AddPointLight(pointLight);
+    lightManager->AddPointLight(pointLight2);
+    lightManager->AddSpotLight(spotLight);
 
+    lightManager->SetupLights(ourShader);
 
-    LightComponent pointLight2{};
-    pointLight2.color = glm::vec3(1.0f, 0.0f, 0.0f); // Red light
-    pointLight2.position = glm::vec3(2.0f, 0.2f, 1.0f);
-    pointLight2.ambientIntensity = 0.05f;
-    pointLight2.diffuseIntensity = 0.8f;
-    pointLight2.specularIntensity = 1.0f;
-    pointLight2.constant = 1.0f;
-    pointLight2.linear = 0.09f;
-    pointLight2.quadratic = 0.032f;
-
-    pointLights.push_back(pointLight2);
-
-    LightComponent spotLight{};
-    spotLight.color = glm::vec3(0.0f, 1.0f, 0.0f); // Green light
-    spotLight.position = camera.Position;
-    spotLight.direction = camera.Front;
-    spotLight.ambientIntensity = 0.0f;
-    spotLight.diffuseIntensity = 1.0f;
-    spotLight.specularIntensity = 1.0f;
-    spotLight.constant = 1.0f;
-    spotLight.linear = 0.09f;
-    spotLight.quadratic = 0.032f;
-    spotLight.cutOff = 12.5f;
-    spotLight.outerCutOff = 15.0f;
-
-    spotLights.push_back(spotLight);
-
-    ourShader->use();
-    ourShader->setInt("pointLightCount", pointLights.size());
-    ourShader->setInt("spotLightCount", spotLights.size());
 }
 
 void Scene::Run() {
@@ -136,19 +136,15 @@ void Scene::Run() {
     ourShader->setMat4("view", view);
     ourShader->setMat4("projection", projection);
 
-    //Lights
-    LightBindings::SetDirectionalLight(ourShader, directionalLights[0]);
+    // 
 
-    for (size_t i = 0; i < pointLights.size(); i++)
-        LightBindings::SetPointLight(ourShader, pointLights[i],i);
-
-    for (size_t i = 0; i < spotLights.size(); i++) 
+    Ref<LightComponent> mySpotLight = lightManager->GetSpotLight(0);
+    if (mySpotLight)
     {
-        spotLights[i].position = camera.Position;
-        spotLights[i].direction = camera.Front;
-
-        LightBindings::SetSpotLight(ourShader, spotLights[i],i);
+        mySpotLight->position = camera.Position;
+        mySpotLight->direction = camera.Front;
     }
+    lightManager->Render();
 
     // draw skyBox
     skybox.Draw(view, projection);
@@ -175,24 +171,25 @@ void Scene::Run() {
 
     OpenGLConfigurations::DisableFaceCulling();
 
-    // also draw the lamp object(s)
-    lightCubeShader->use();
-    lightCubeShader->setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
-    lightCubeShader->setMat4("projection", projection);
-    lightCubeShader->setMat4("view", view);
 
-    lightVAO->Bind();
+    lightManager->DrawLights(view, projection);
+    //// also draw the lamp object(s)
+    //lightCubeShader->use();
+    //lightCubeShader->setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+    //lightCubeShader->setMat4("projection", projection);
+    //lightCubeShader->setMat4("view", view);
 
-    for (unsigned int i = 0; i < pointLights.size(); i++)
-    {
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, pointLights[i].position);
-        model = glm::scale(model, glm::vec3(0.2f));
-        lightCubeShader->setMat4("model", model);
-        OpenglRenderer::DrawIndexed(lightVAO);
-    }
+    //lightVAO->Bind();
 
-    ourShader->use();
+    //for (unsigned int i = 0; i < pointLights.size(); i++)
+    //{
+    //    model = glm::mat4(1.0f);
+    //    model = glm::translate(model, pointLights[i].position);
+    //    model = glm::scale(model, glm::vec3(0.2f));
+    //    lightCubeShader->setMat4("model", model);
+    //    OpenglRenderer::DrawIndexed(lightVAO);
+    //}
+
     //ourShader->setVec3("lightColor", glm::vec3(0.533f, 0.906f, 0.533f));
 
     OpenGLConfigurations::EnableFaceCulling();
@@ -203,6 +200,7 @@ void Scene::Run() {
     quadVertexArray->Bind();
 
     OpenglRenderer::DrawIndexed(quadVertexArray);
+
 }
 
 void Scene::MouseCallback(double xposIn, double yposIn)

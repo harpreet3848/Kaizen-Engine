@@ -24,11 +24,11 @@ void Mesh::Draw(Shader& shader)
         // retrieve texture number (the N in diffuse_textureN)
 
         std::string number;
-        if (tex.type == TextureType::diffuse)  number = std::to_string(diffuseNr++);
-        else if (tex.type == TextureType::specular) number = std::to_string(specularNr++); // transfer unsigned int to string
-        else if (tex.type == TextureType::normal)   number = std::to_string(normalNr++);  // transfer unsigned int to string
-        else if (tex.type == TextureType::height)   number = std::to_string(heightNr++); // transfer unsigned int to string
-        else if (tex.type == TextureType::emission) number = std::to_string(emissionNr++);
+        if (tex.type == TextureType::Diffuse)  number = std::to_string(diffuseNr++);
+        else if (tex.type == TextureType::Specular) number = std::to_string(specularNr++); // transfer unsigned int to string
+        else if (tex.type == TextureType::Normal)   number = std::to_string(normalNr++);  // transfer unsigned int to string
+        else if (tex.type == TextureType::Height)   number = std::to_string(heightNr++); // transfer unsigned int to string
+        else if (tex.type == TextureType::Emission) number = std::to_string(emissionNr++);
 
         std::string uniformName = "material." + TextureTypeToString(tex.type) + "[" + number + "]";
 
@@ -44,7 +44,7 @@ void Mesh::Draw(Shader& shader)
     _vertexArray.Bind();
     glDrawElements(
         GL_TRIANGLES,
-        static_cast<unsigned int>(_indices.size()),
+        static_cast<uint32_t>(_indices.size()),
         GL_UNSIGNED_INT,
         0
     );
@@ -59,11 +59,11 @@ void Mesh::setupMesh()
 {
     auto vertexBuffer = std::make_shared<VertexBuffer>(
         _vertices.data(),
-        _vertices.size() * sizeof(Vertex)
+        static_cast<uint32_t>(_vertices.size() * sizeof(Vertex))
     );
     auto indexBuffer = std::make_shared<IndexBuffer>(
         _indices.data(),
-        _indices.size()
+        static_cast<uint32_t>(_indices.size())
     );
 
     BufferLayout layout = {
@@ -73,7 +73,7 @@ void Mesh::setupMesh()
         { ShaderDataType::Float3, "a_Tangent",  false },
         { ShaderDataType::Float3, "a_Bitangent",false },
         { ShaderDataType::Float4, "a_Bone",     false },
-        { ShaderDataType::Float4, "a_Weights",  false },
+        { ShaderDataType::Float4, "a_Weights",  false }, 
     };
 
     vertexBuffer->SetLayout(layout);

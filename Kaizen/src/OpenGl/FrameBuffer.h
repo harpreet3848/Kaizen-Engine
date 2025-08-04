@@ -6,14 +6,14 @@
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
 
-#include "../Core/EngineConstansts.h"
+#include "Core/EngineConstansts.h"
 #include "OpenGLRenderer.h"
 
 class FrameBuffer {
 private:
 	uint32_t m_framebufferID;
-	unsigned int textureColorbuffer;
-	unsigned int rbo;
+	uint32_t textureColorbuffer;
+	uint32_t rbo;
 public:
 	FrameBuffer()
 	{

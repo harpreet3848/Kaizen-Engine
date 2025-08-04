@@ -17,7 +17,7 @@ private:
 
     static void APIENTRY debugOutput(GLenum source,
         GLenum type,
-        unsigned int id,
+        uint32_t id,
         GLenum severity,
         GLsizei length,
         const char* message,

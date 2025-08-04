@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include "VertexArray.h"
 #include "IndexBuffer.h"
 
@@ -16,6 +15,6 @@ public:
 	static void ClearDepthBuffer();
 	static void ClearStencilBuffer();
 
-	static void DrawTriangles(const unsigned numberOfVertices);
+	static void DrawTriangles(const uint32_t numberOfVertices);
 	static void DrawIndexed(const Ref<VertexArray>& vertexArray);
 };

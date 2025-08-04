@@ -40,7 +40,7 @@ void OpenGLDebugger::checkError(const char* file, int line)
     }
 }
 
-void APIENTRY OpenGLDebugger::debugOutput(GLenum source, GLenum type, unsigned int id,
+void APIENTRY OpenGLDebugger::debugOutput(GLenum source, GLenum type, uint32_t id,
     GLenum severity, GLsizei length,
     const char* message, const void* userParam)
 {

@@ -4,6 +4,8 @@
 #include "IndexBuffer.h"
 #include "Buffer.h" // For BufferLayout
 
+
+
 Ref<VertexArray> ShapeGenerator::GenerateSquare()
 {
     static float vertices[] = {
@@ -14,12 +16,12 @@ Ref<VertexArray> ShapeGenerator::GenerateSquare()
         -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,
     };
 
-    static unsigned int indices[] = {
+    static uint32_t indices[] = {
         0, 1, 3,  // first Triangle
         1, 2, 3   // second Triangle
     };
 
-    auto vertexBuffer = std::make_shared<VertexBuffer>(vertices, sizeof(vertices));
+    auto vertexBuffer = std::make_shared<VertexBuffer>(vertices, static_cast<uint32_t>(sizeof(vertices)));
 
     const BufferLayout bufferlayout =
     {
@@ -31,7 +33,7 @@ Ref<VertexArray> ShapeGenerator::GenerateSquare()
     auto vertexArray = std::make_shared<VertexArray>();
     vertexArray->AddVertexBuffer(vertexBuffer);
 
-    auto indexBuffer = std::make_shared<IndexBuffer>(indices, std::size(indices));
+    auto indexBuffer = std::make_shared<IndexBuffer>(indices, static_cast<uint32_t>(sizeof(indices)));
     vertexArray->AddIndexBuffer(indexBuffer);
 
     return vertexArray;
@@ -47,12 +49,12 @@ Ref<VertexArray> ShapeGenerator::GenerateQuad()
          1.0f, -1.0f,   1.0f, 0.0f
     };
 
-    static unsigned int indices[] = {
+    static uint32_t indices[] = {
         1, 2, 3,
         1, 3, 0
     };
 
-    auto vertexBuffer = std::make_shared<VertexBuffer>(quadVertices, sizeof(quadVertices));
+    auto vertexBuffer = std::make_shared<VertexBuffer>(quadVertices, static_cast<uint32_t>(sizeof(quadVertices)));
 
     const BufferLayout bufferlayout =
     {
@@ -62,7 +64,7 @@ Ref<VertexArray> ShapeGenerator::GenerateQuad()
     vertexBuffer->SetLayout(bufferlayout);
 
     auto vertexArray = std::make_shared<VertexArray>();
-    auto indexBuffer = std::make_shared<IndexBuffer>(indices, std::size(indices));
+    auto indexBuffer = std::make_shared<IndexBuffer>(indices, static_cast<uint32_t>(sizeof(indices)));
 
     vertexArray->AddVertexBuffer(vertexBuffer);
     vertexArray->AddIndexBuffer(indexBuffer);
@@ -106,7 +108,7 @@ Ref<VertexArray> ShapeGenerator::GenerateCube()
          -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // 23
     };
 
-    static unsigned int indices[] = {
+    static uint32_t indices[] = {
         // Back face
         0, 2, 1, 2, 0, 3,
         // Front face
@@ -121,7 +123,7 @@ Ref<VertexArray> ShapeGenerator::GenerateCube()
         20, 22, 21, 22, 20, 23
     };
 
-    auto vertexBuffer = std::make_shared<VertexBuffer>(cubeVertices, sizeof(cubeVertices));
+    auto vertexBuffer = std::make_shared<VertexBuffer>(cubeVertices, static_cast<uint32_t>(sizeof(cubeVertices)));
 
     const BufferLayout bufferlayout =
     {
@@ -132,7 +134,7 @@ Ref<VertexArray> ShapeGenerator::GenerateCube()
 
     auto vertexArray = std::make_shared<VertexArray>();
 
-    auto indexBuffer = std::make_shared<IndexBuffer>(indices, std::size(indices));
+    auto indexBuffer = std::make_shared<IndexBuffer>(indices, static_cast<uint32_t>(sizeof(indices)));
 
     vertexArray->AddVertexBuffer(vertexBuffer);
     vertexArray->AddIndexBuffer(indexBuffer);

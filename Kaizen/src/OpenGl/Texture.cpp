@@ -5,24 +5,25 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include "Core/Core.h"
+
 std::string TextureTypeToString(TextureType textureType)
 {
     switch (textureType)
     {
-    case diffuse:
+    case Diffuse:
         return "texture_diffuse";
-    case specular:
+    case Specular:
         return "texture_specular";
-    case normal:
+    case Normal:
         return "texture_normal";
-    case height:
+    case Height:
         return "texture_height";
-    case emission:
+    case Emission:
         return "texture_emission";
     }
     return "";
 }
-
 
 Texture::Texture(const char* filePath,const TextureSettings& textureSettings)
 {
@@ -31,17 +32,17 @@ Texture::Texture(const char* filePath,const TextureSettings& textureSettings)
     glBindTexture(GL_TEXTURE_2D, m_textureId);
 
     // Set wrapping/filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl_enum_cast(textureSettings.wrapU));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl_enum_cast(textureSettings.wrapV));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_enum_cast(textureSettings.minFilter));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_enum_cast(textureSettings.magFilter));
 
     stbi_set_flip_vertically_on_load(textureSettings.flipTexture);
     int width, height, nrChannels;
     unsigned char* data = stbi_load(filePath, &width, &height, &nrChannels, 0);
 
     GLenum internalFormat = 0;
-    if (textureSettings.textureType == TextureType::diffuse && textureSettings.isGammaCorrection) {
+    if (textureSettings.textureType == TextureType::Diffuse && textureSettings.isGammaCorrection) {
         internalFormat = (nrChannels == 4) ? GL_SRGB_ALPHA : GL_SRGB;
     }
     else {

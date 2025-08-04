@@ -28,7 +28,7 @@ void Model::loadModel(const std::string& path)
     Assimp::Importer importer;
 
     // Set post-processing flags. These are crucial!
-    const unsigned int flags = 
+    const uint32_t flags =
         aiProcess_Triangulate |             // Ensure all faces are triangles
         aiProcess_GenSmoothNormals |        // Generate smooth normals if they don't exist
         aiProcess_CalcTangentSpace |        // Calculate tangents and bitangents for normal mapping
@@ -53,25 +53,25 @@ void Model::loadModel(const std::string& path)
 void Model::processNode(aiNode* node, const aiScene* scene)
 {
     // process each mesh located at the current node
-    for (unsigned int i = 0; i < node->mNumMeshes; ++i)
+    for (uint32_t i = 0; i < node->mNumMeshes; ++i)
     {
         // the node object only contains indices to index the actual objects in the scene. 
          // the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         meshes.push_back(processMesh(mesh, scene));
     }
-    for (unsigned int i = 0; i < node->mNumChildren; ++i)
+    for (uint32_t i = 0; i < node->mNumChildren; ++i)
         processNode(node->mChildren[i], scene);
 }
 
 std::unique_ptr<Mesh> Model::processMesh(aiMesh* mesh, const aiScene* scene)
 {
     std::vector<Vertex>       vertices;
-    std::vector<unsigned int> indices;
+    std::vector<uint32_t> indices;
     std::vector<TextureData>  textures;
 
     // -- fill vertices
-    for (unsigned int i = 0; i < mesh->mNumVertices; ++i)
+    for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
     {
         Vertex vertex;
         glm::vec3 vector; // we declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
@@ -122,10 +122,10 @@ std::unique_ptr<Mesh> Model::processMesh(aiMesh* mesh, const aiScene* scene)
     }
 
     // -- fill indices
-    for (unsigned int i = 0; i < mesh->mNumFaces; ++i)
+    for (uint32_t i = 0; i < mesh->mNumFaces; ++i)
     {
         aiFace face = mesh->mFaces[i];
-        for (unsigned int j = 0; j < face.mNumIndices; ++j)
+        for (uint32_t j = 0; j < face.mNumIndices; ++j)
             indices.push_back(face.mIndices[j]);
     }
 
@@ -140,19 +140,19 @@ std::unique_ptr<Mesh> Model::processMesh(aiMesh* mesh, const aiScene* scene)
 
     
     // diffuse
-    auto diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, TextureType::diffuse);
+    auto diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, TextureType::Diffuse);
     textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
     // specular
-    auto specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, TextureType::specular);
+    auto specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, TextureType::Specular);
     textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
     // normal
-    auto normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, TextureType::normal);
+    auto normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, TextureType::Normal);
     textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
     // height
-    auto heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, TextureType::height);
+    auto heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, TextureType::Height);
     textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
-    auto emissionMaps = loadMaterialTextures(material, aiTextureType_EMISSIVE, TextureType::emission);
+    auto emissionMaps = loadMaterialTextures(material, aiTextureType_EMISSIVE, TextureType::Emission);
     textures.insert(textures.end(), emissionMaps.begin(), emissionMaps.end());
 
     return  std::make_unique<Mesh>(vertices, indices, textures);
@@ -162,7 +162,7 @@ std::unique_ptr<Mesh> Model::processMesh(aiMesh* mesh, const aiScene* scene)
 std::vector<TextureData> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, TextureType typeName)
 {
     std::vector<TextureData> textures;
-    for (unsigned int i = 0; i < mat->GetTextureCount(type); ++i)
+    for (uint32_t i = 0; i < mat->GetTextureCount(type); ++i)
     {
         aiString str;
         mat->GetTexture(type, i, &str);
@@ -201,6 +201,10 @@ unsigned int TextureFromFile(const char* path, const std::string& directory,Text
     textureSettings.isGammaCorrection = gamma;
     textureSettings.textureType = textureType;
     textureSettings.flipTexture = flip;
+    textureSettings.wrapU = TextureWrapMode::Repeat;
+    textureSettings.wrapV = TextureWrapMode::Repeat;
+    textureSettings.minFilter = TextureFilterMode::LinearMipmapLinear;
+    textureSettings.magFilter = TextureFilterMode::Linear;
 
     Texture texture{ filename.c_str(), textureSettings };
     return texture.GetId();

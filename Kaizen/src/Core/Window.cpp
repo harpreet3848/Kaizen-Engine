@@ -91,7 +91,8 @@ void Window::SetCursorPosCallback(const CursorPosCallback& callback)
 
 void Window::GlfwCursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
-    Window::GetInstance().m_CursorPosCallback(xpos, ypos);
+    if(Window::GetInstance().m_CursorPosCallback)
+        Window::GetInstance().m_CursorPosCallback(xpos, ypos);
 }
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {

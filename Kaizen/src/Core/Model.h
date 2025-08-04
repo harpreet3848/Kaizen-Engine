@@ -4,8 +4,8 @@
 #include <vector>
 #include <assimp/scene.h>          // for aiNode, aiScene, aiMesh, aiMaterial, aiTextureType
 #include "Mesh.h"
-#include "../OpenGl/Shader.h"        
-#include "../OpenGl/Texture.h"        
+#include "OpenGl/Shader.h"        
+#include "OpenGl/Texture.h"        
 
 
 unsigned int TextureFromFile(const char* path, const std::string& directory, TextureType textureType, bool gamma, bool flip);

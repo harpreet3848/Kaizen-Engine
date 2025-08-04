@@ -50,7 +50,7 @@ void Skybox::Init(const std::vector<std::string>& facesFilepaths)
 
     skyboxShader = std::make_unique<Shader>("shaders/skybox_Vertex.glsl", "shaders/skybox_fragment.glsl");
 
-    auto skyVertexBuffer = std::make_shared<VertexBuffer>(skyCubeVertices, sizeof(skyCubeVertices));
+    auto skyVertexBuffer = std::make_shared<VertexBuffer>(skyCubeVertices, static_cast<unsigned int>(sizeof(skyCubeVertices)));
 
     const BufferLayout skyBufferlayout = {
         {ShaderDataType::Float3, "a_Position",false },

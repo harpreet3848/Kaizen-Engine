@@ -7,7 +7,7 @@ private:
 	uint32_t m_RendererID;
 	uint32_t m_count;
 public:
-	IndexBuffer(const unsigned int* data, unsigned int count);
+	IndexBuffer(const uint32_t* data, uint32_t count);
 	~IndexBuffer();
 
 	uint32_t GetCount() const;

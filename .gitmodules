@@ -1,0 +1,4 @@
+[submodule "Kaizen/src/Vendor/imgui"]
+	path = Kaizen/src/Vendor/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking

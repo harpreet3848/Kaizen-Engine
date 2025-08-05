@@ -32,6 +32,7 @@ void Scene::Init() {
    
     ourModel = std::make_shared<Model>("Resources/objects/medievalCastle/medievalCastle.obj", true, false);
     groundModel = std::make_shared<Model>("Resources/objects/SimpleGround/Ground.obj", true, false);
+    frameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,true);
 
 
     std::vector<std::string> facesFilepaths
@@ -68,7 +69,6 @@ void Scene::Init() {
     pointLight->constant = 1.0f;
     pointLight->linear = 0.09f;
     pointLight->quadratic = 0.032f;
-
 
 
     auto pointLight2 = std::make_shared<LightComponent>();
@@ -112,7 +112,7 @@ void Scene::Run() {
 
     ProcessInput();
 
-    frameBuffer.BindToFrameBuffer();
+    frameBuffer->BindToFrameBuffer();
 
     // Enable depth testing for the entire frame by default.
     OpenGLConfigurations::EnableDepthTesting();
@@ -173,30 +173,12 @@ void Scene::Run() {
 
 
     lightManager->DrawLights(view, projection);
-    //// also draw the lamp object(s)
-    //lightCubeShader->use();
-    //lightCubeShader->setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
-    //lightCubeShader->setMat4("projection", projection);
-    //lightCubeShader->setMat4("view", view);
-
-    //lightVAO->Bind();
-
-    //for (unsigned int i = 0; i < pointLights.size(); i++)
-    //{
-    //    model = glm::mat4(1.0f);
-    //    model = glm::translate(model, pointLights[i].position);
-    //    model = glm::scale(model, glm::vec3(0.2f));
-    //    lightCubeShader->setMat4("model", model);
-    //    OpenglRenderer::DrawIndexed(lightVAO);
-    //}
-
-    //ourShader->setVec3("lightColor", glm::vec3(0.533f, 0.906f, 0.533f));
 
     OpenGLConfigurations::EnableFaceCulling();
     // Render ScreenQuad
     screenShader->use();
     screenShader->setInt("screenTexture", 0);
-    frameBuffer.BindToTexture();
+    frameBuffer->BindToTexture();
     quadVertexArray->Bind();
 
     OpenglRenderer::DrawIndexed(quadVertexArray);

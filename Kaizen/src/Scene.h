@@ -48,11 +48,12 @@ private:
     Ref<Shader> ourShader;
     Ref<Shader> screenShader;
 
+    Ref<FrameBuffer> frameBuffer;
+
     Ref<VertexArray> quadVertexArray;
 
     Ref<LightManager> lightManager;
 
-    FrameBuffer frameBuffer;
     Skybox skybox;
 
     // Camera and Timing

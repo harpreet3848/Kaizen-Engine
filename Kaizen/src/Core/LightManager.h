@@ -13,6 +13,7 @@
 class LightManager {
 public:
     LightManager();
+
     void AddDirectionalLight(const Ref<LightComponent>& directionalLight);
     void AddPointLight(const Ref<LightComponent>& pointLight);
     void AddSpotLight(const Ref<LightComponent>& spotLight);

@@ -81,7 +81,13 @@ void APIENTRY OpenGLDebugger::debugOutput(GLenum source, GLenum type, uint32_t i
     case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: Notification"; break;
     }
     std::cout << std::endl;
+  /*  if(type == GL_DEBUG_TYPE_PERFORMANCE)
+    {
+#ifdef _MSC_VER
 
+        __debugbreak();
+#endif
+    }*/
     if (severity == GL_DEBUG_SEVERITY_HIGH) {
 #ifdef _MSC_VER
         __debugbreak(); // Halts the program in the debugger if on MSVC

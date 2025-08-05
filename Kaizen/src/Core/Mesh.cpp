@@ -22,7 +22,6 @@ void Mesh::Draw(Shader& shader)
         const auto& tex = _textures[i];
 
         // retrieve texture number (the N in diffuse_textureN)
-
         std::string number;
         if (tex.type == TextureType::Diffuse)  number = std::to_string(diffuseNr++);
         else if (tex.type == TextureType::Specular) number = std::to_string(specularNr++); // transfer unsigned int to string

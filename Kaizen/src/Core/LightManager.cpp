@@ -8,7 +8,7 @@ LightManager::LightManager()
 
     lightVAO = ShapeGenerator::GenerateCube();
 
-    lightCubeShader = std::make_shared<Shader>("shaders/Default_Vertex.glsl", "shaders/lightColor_Fragment.glsl");
+    lightCubeShader = std::make_shared<Shader>("shaders/lights_Vertex_Shader.glsl", "shaders/lightColor_Fragment.glsl");
 }
 
 void LightManager::AddDirectionalLight(const Ref<LightComponent>& directionalLight)
@@ -71,12 +71,10 @@ void LightManager::Render()
     DrawImGuiControls();
 }
 
-void LightManager::DrawLights(glm::mat4 view, glm::mat4 projection)
+void LightManager::DrawLights()
 {
     // draw light cubes
     lightCubeShader->use();
-    lightCubeShader->setMat4("projection", projection);
-    lightCubeShader->setMat4("view", view);
 
     lightVAO->Bind();
     glm::mat4 model = glm::mat4(1.0f);

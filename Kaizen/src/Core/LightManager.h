@@ -26,7 +26,7 @@ public:
 
     void Render();
 
-    void DrawLights(glm::mat4 view, glm::mat4 projection);
+    void DrawLights();
 
     void DrawImGuiControls();
     void DrawLightEditor(Ref<LightComponent> light);

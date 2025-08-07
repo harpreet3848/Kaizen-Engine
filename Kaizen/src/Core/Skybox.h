@@ -13,7 +13,7 @@ class Skybox
 public:
     void Init(const std::vector<std::string>& facesFilepaths);
 
-    void Draw(glm::mat4 view, glm::mat4 projection);
+    void Draw();
 
 private:
     VertexArray skyboxVertexArray;

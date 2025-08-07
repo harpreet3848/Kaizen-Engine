@@ -1,4 +1,4 @@
-#version 330 core
+#version 460 core
 
 // Define max textures per type
 #define MAX_DIFFUSE_MAPS 4

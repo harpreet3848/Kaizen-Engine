@@ -68,7 +68,7 @@ void Skybox::Init(const std::vector<std::string>& facesFilepaths)
     skyboxShader->setInt("skybox", 0);
 }
 
-void Skybox::Draw(glm::mat4 view, glm::mat4 projection)
+void Skybox::Draw()
 {
     // Render sybox
     OpenGLConfigurations::SetDepthFunction(DepthMode::LESS_EQUAL);// change depth function so depth test passes when values are equal to depth buffer's content
@@ -81,8 +81,6 @@ void Skybox::Draw(glm::mat4 view, glm::mat4 projection)
     }
 
     skyboxShader->use();
-    skyboxShader->setMat4("view", view);
-    skyboxShader->setMat4("projection", projection);
     skyboxVertexArray.Bind();
     cubeMap->BindTexture(0);
     OpenglRenderer::DrawTriangles(36);

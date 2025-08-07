@@ -15,6 +15,8 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
     std::string fragmentCode;
     std::ifstream vShaderFile;
     std::ifstream fShaderFile;
+
+
     vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
@@ -30,6 +32,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
         fragmentCode = fStream.str();
     }
     catch (std::ifstream::failure& e) {
+
         std::cerr << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << "\n";
     }
 

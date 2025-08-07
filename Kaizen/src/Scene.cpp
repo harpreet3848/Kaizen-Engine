@@ -27,12 +27,14 @@ void Scene::Init() {
     OpenGLConfigurations::SetWindingOrder(WindingOder::CLOCKWISE);
     
 
-    ourShader = std::make_shared<Shader>("shaders/Default_Vertex.glsl", "shaders/MultipleLights_Fragment.glsl");
+    ourShader = std::make_shared<Shader>("shaders/lights_Vertex_Shader.glsl", "shaders/MultipleLights_Fragment.glsl");
     screenShader = std::make_shared<Shader>("shaders/framebuffers_screen_Vertex.glsl", "shaders/framebuffers_screen_Fragment.glsl");
    
     ourModel = std::make_shared<Model>("Resources/objects/medievalCastle/medievalCastle.obj", true, false);
     groundModel = std::make_shared<Model>("Resources/objects/SimpleGround/Ground.obj", true, false);
     frameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,true);
+
+    uniformBuffer = std::make_shared<UniformBuffer>(2 * sizeof(glm::mat4));
 
 
     std::vector<std::string> facesFilepaths
@@ -103,6 +105,9 @@ void Scene::Init() {
 
     lightManager->SetupLights(ourShader);
 
+
+    // Send data blocking index 0 for all shaders
+    uniformBuffer->BindBufferRange(0, 0, 2 * sizeof(glm::mat4));
 }
 
 void Scene::Run() {
@@ -133,10 +138,8 @@ void Scene::Run() {
     ourShader->setVec3("viewPos", camera.Position);
     ourShader->setFloat("material.shininess", 64.0f);
 
-    ourShader->setMat4("view", view);
-    ourShader->setMat4("projection", projection);
-
-    // 
+    uniformBuffer->SetBufferSubData(0,sizeof(glm::mat4), glm::value_ptr(projection));
+    uniformBuffer->SetBufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
 
     Ref<LightComponent> mySpotLight = lightManager->GetSpotLight(0);
     if (mySpotLight)
@@ -147,7 +150,7 @@ void Scene::Run() {
     lightManager->Render();
 
     // draw skyBox
-    skybox.Draw(view, projection);
+    skybox.Draw();
 
     float rotationSpeed = 200.0f;
     float floatingSpeed = 5.0f;
@@ -172,7 +175,7 @@ void Scene::Run() {
     OpenGLConfigurations::DisableFaceCulling();
 
 
-    lightManager->DrawLights(view, projection);
+    lightManager->DrawLights();
 
     OpenGLConfigurations::EnableFaceCulling();
     // Render ScreenQuad

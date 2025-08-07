@@ -31,11 +31,11 @@
 #include "Core/Skybox.h"
 #include "Core/LightBindings.h"
 #include "Core/LightManager.h"
+#include <OpenGl/UniformBuffer.h>
 
 
 class Scene {
 public:
-    // Constructor to initialize member variables in cpp
     Scene();
     void Init();
 
@@ -53,6 +53,8 @@ private:
     Ref<VertexArray> quadVertexArray;
 
     Ref<LightManager> lightManager;
+
+    Ref<UniformBuffer> uniformBuffer;
 
     Skybox skybox;
 

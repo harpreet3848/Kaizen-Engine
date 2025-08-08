@@ -48,7 +48,7 @@ void Skybox::Init(const std::vector<std::string>& facesFilepaths)
         -0.5f,  0.5f, -0.5f,
     };
 
-    skyboxShader = std::make_unique<Shader>("shaders/skybox_Vertex.glsl", "shaders/skybox_fragment.glsl");
+    skyboxShader = std::make_unique<Shader>("Shaders/skybox_Vertex.glsl", "Shaders/skybox_fragment.glsl");
 
     auto skyVertexBuffer = std::make_shared<VertexBuffer>(skyCubeVertices, static_cast<unsigned int>(sizeof(skyCubeVertices)));
 
@@ -70,8 +70,7 @@ void Skybox::Init(const std::vector<std::string>& facesFilepaths)
 
 void Skybox::Draw()
 {
-    // Render sybox
-    OpenGLConfigurations::SetDepthFunction(DepthMode::LESS_EQUAL);// change depth function so depth test passes when values are equal to depth buffer's content
+
 
     bool isSceneCulled = false;
     if (OpenGLConfigurations::IsStateActive(RendererStates::FaceCulling))
@@ -84,8 +83,6 @@ void Skybox::Draw()
     skyboxVertexArray.Bind();
     cubeMap->BindTexture(0);
     OpenglRenderer::DrawTriangles(36);
-
-    OpenGLConfigurations::SetDepthFunction(DepthMode::LESS);
 
     if (isSceneCulled)
     {

@@ -8,7 +8,7 @@ LightManager::LightManager()
 
     lightVAO = ShapeGenerator::GenerateCube();
 
-    lightCubeShader = std::make_shared<Shader>("shaders/lights_Vertex_Shader.glsl", "shaders/lightColor_Fragment.glsl");
+    lightCubeShader = std::make_shared<Shader>("Shaders/lights_Vertex_Shader.glsl", "Shaders/lightColor_Fragment.glsl");
 }
 
 void LightManager::AddDirectionalLight(const Ref<LightComponent>& directionalLight)

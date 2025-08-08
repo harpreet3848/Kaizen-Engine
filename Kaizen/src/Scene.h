@@ -47,8 +47,11 @@ private:
     Ref<Model> ourModel;
     Ref<Shader> ourShader;
     Ref<Shader> screenShader;
+    Ref<Shader> depthShader;
 
     Ref<FrameBuffer> frameBuffer;
+    Ref<FrameBuffer> shadowMap;
+
 
     Ref<VertexArray> quadVertexArray;
 

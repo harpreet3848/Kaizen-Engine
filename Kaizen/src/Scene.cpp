@@ -32,10 +32,11 @@ void Scene::Init() {
    
     ourModel = std::make_shared<Model>("Resources/objects/medievalCastle/medievalCastle.obj", true, false);
     groundModel = std::make_shared<Model>("Resources/objects/SimpleGround/Ground.obj", true, false);
-    frameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,true);
+    
+    frameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,false,true);
+    shadowMap = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH, EngineConstants::SCR_HEIGHT, true, false);
 
     uniformBuffer = std::make_shared<UniformBuffer>(2 * sizeof(glm::mat4));
-
 
     std::vector<std::string> facesFilepaths
     {
@@ -105,9 +106,12 @@ void Scene::Init() {
 
     lightManager->SetupLights(ourShader);
 
-
     // Send data blocking index 0 for all shaders
     uniformBuffer->BindBufferRange(0, 0, 2 * sizeof(glm::mat4));
+
+
+    screenShader->use();
+    screenShader->setInt("screenTexture", 0);
 }
 
 void Scene::Run() {
@@ -117,14 +121,14 @@ void Scene::Run() {
 
     ProcessInput();
 
-    frameBuffer->BindToFrameBuffer();
-
     // Enable depth testing for the entire frame by default.
     OpenGLConfigurations::EnableDepthTesting();
 
-    OpenglRenderer::ClearColor();
-    OpenglRenderer::ClearAllBuffer();
+    OpenGLConfigurations::SetDepthFunction(DepthMode::LESS_EQUAL);// change depth function so depth test passes when values are equal to depth buffer's content
 
+
+
+    frameBuffer->BindToFrameBuffer();
 
     glm::mat4 view = glm::mat4(1.0f);
     glm::mat4 projection;
@@ -174,16 +178,15 @@ void Scene::Run() {
 
     OpenGLConfigurations::DisableFaceCulling();
 
-
     lightManager->DrawLights();
 
     OpenGLConfigurations::EnableFaceCulling();
     // Render ScreenQuad
     screenShader->use();
-    screenShader->setInt("screenTexture", 0);
     frameBuffer->BindToTexture();
-    quadVertexArray->Bind();
 
+    OpenGLConfigurations::DisableDepthTesting(); // for rendering quad on screen always
+    quadVertexArray->Bind();
     OpenglRenderer::DrawIndexed(quadVertexArray);
 
 }

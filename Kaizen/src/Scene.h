@@ -37,9 +37,14 @@
 class Scene {
 public:
     Scene();
+    ~Scene();
     void Init();
 
     void Run();
+
+    void ApplyMouseLook(bool enabled);
+
+    void renderScene(Ref<Shader> shader, glm::mat4& projection, glm::mat4& view);
 
 private:
 
@@ -47,6 +52,7 @@ private:
     Ref<Model> ourModel;
     Ref<Shader> ourShader;
     Ref<Shader> screenShader;
+    Ref<Shader> depthScreenShader;
     Ref<Shader> depthShader;
 
     Ref<FrameBuffer> frameBuffer;
@@ -60,6 +66,8 @@ private:
     Ref<UniformBuffer> uniformBuffer;
 
     Skybox skybox;
+
+    bool m_MouseLook = false;
 
     // Camera and Timing
     Camera camera;

@@ -122,13 +122,17 @@ void FrameBuffer::createPostProcessingFBO()
 
 void FrameBuffer::BindToFrameBuffer() const 
 {
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FramebufferID);
-
     glViewport(0, 0, m_Width, m_Height);
 
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FramebufferID);
 
     OpenglRenderer::ClearColor();
-    OpenglRenderer::ClearAllBuffer();
+
+    OpenglRenderer::ClearColourBuffer();
+    OpenglRenderer::ClearDepthBuffer();
+
+    if(!m_IsDepthOnly)
+        OpenglRenderer::ClearStencilBuffer();
 
 }
 
@@ -144,7 +148,11 @@ void FrameBuffer::BindToTexture() const {
 	UnBind();
 
 	OpenglRenderer::ClearColor();
-    OpenglRenderer::ClearAllBuffer();
+    OpenglRenderer::ClearColourBuffer();
+    OpenglRenderer::ClearDepthBuffer();
+
+    if (!m_IsDepthOnly)
+        OpenglRenderer::ClearStencilBuffer();
 
 	glActiveTexture(GL_TEXTURE0);
 

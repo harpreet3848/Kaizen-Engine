@@ -14,27 +14,40 @@ Scene::Scene() : camera(glm::vec3(0.0f, 0.0f, 3.0f)),
 {
 
 }
+Scene::~Scene() 
+{
+    Window::GetInstance().SetCursorPosCallback([](double, double) {});
 
+}
 void Scene::Init() {
 
-    //Window::GetInstance().SetWindowCursor(false);
-    //Window::GetInstance().SetCursorPosCallback([this](double xpos, double ypos) {
-    //    this->MouseCallback(xpos, ypos);
-    //    });
+    // Start with mouse-look OFF, or set m_MouseLook=true if you want it ON by default.
+    ApplyMouseLook(m_MouseLook);
 
-    OpenGLConfigurations::EnableFaceCulling();
+    // Install the callback once; guard it so it only runs when we want mouse-look
+    Window::GetInstance().SetCursorPosCallback([this](double xpos, double ypos) {
+        if (!this->m_MouseLook) return;                 // toggle controls it
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.WantCaptureMouse) return;          // let ImGui consume UI interactions
+        this->MouseCallback(xpos, ypos);
+        });
+
+    OpenGLConfigurations::EnableFaceCulling(); 
     OpenGLConfigurations::SetFaceCullingMode(FaceCullMode::FRONT);
     OpenGLConfigurations::SetWindingOrder(WindingOder::CLOCKWISE);
     
 
-    ourShader = std::make_shared<Shader>("shaders/lights_Vertex_Shader.glsl", "shaders/MultipleLights_Fragment.glsl");
-    screenShader = std::make_shared<Shader>("shaders/framebuffers_screen_Vertex.glsl", "shaders/framebuffers_screen_Fragment.glsl");
-   
+    ourShader = std::make_shared<Shader>("Shaders/lights_Vertex_Shader.glsl", "Shaders/MultipleLights_Fragment.glsl");
+    screenShader = std::make_shared<Shader>("Shaders/framebuffers_screen_Vertex.glsl", "Shaders/framebuffers_screen_Fragment.glsl");
+    depthScreenShader = std::make_shared<Shader>("Shaders/ShadowMap/quad_shadowMap_Vertex.glsl", "Shaders/ShadowMap/quad_shadowMap_Fragment.glsl");
+    depthShader = std::make_shared<Shader>("Shaders/ShadowMap/shadowMap_depth_Vertex.glsl", "Shaders/ShadowMap/shadowMap_depth_Fragment.glsl");
+
+
     ourModel = std::make_shared<Model>("Resources/objects/medievalCastle/medievalCastle.obj", true, false);
     groundModel = std::make_shared<Model>("Resources/objects/SimpleGround/Ground.obj", true, false);
     
     frameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,false,true);
-    shadowMap = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH, EngineConstants::SCR_HEIGHT, true, false);
+    shadowMap = std::make_shared<FrameBuffer>(4096, 4096, true, false);
 
     uniformBuffer = std::make_shared<UniformBuffer>(2 * sizeof(glm::mat4));
 
@@ -50,7 +63,7 @@ void Scene::Init() {
 
     skybox.Init(facesFilepaths);
 
-    quadVertexArray = ShapeGenerator::GenerateQuad();
+    quadVertexArray = ShapeGenerator::GenerateQuad(0,0,1,1);
 
     lightManager = std::make_shared<LightManager>();
 
@@ -110,9 +123,23 @@ void Scene::Init() {
     uniformBuffer->BindBufferRange(0, 0, 2 * sizeof(glm::mat4));
 
 
-    screenShader->use();
-    screenShader->setInt("screenTexture", 0);
+    ourShader->use();
+    ourShader->setFloat("material.shininess", 64.0f);
+    ourShader->setInt("shadowMap", 0);
+
+    //screenShader->use();
+    //screenShader->setInt("screenTexture", 0);
+
+    depthScreenShader->use();
+    depthScreenShader->setInt("depthMap", 0);
+
+    //ourShader->use();
+    //ourShader->setInt("shadowMap", 0);
+    OpenGLConfigurations::EnableFaceCulling();
+    OpenGLConfigurations::SetWindingOrder(WindingOder::ANTICLOCKWISE);
+    OpenGLConfigurations::SetFaceCullingMode(FaceCullMode::BACK);
 }
+glm::vec3 lightPos(-4.3f, 11.7f, 3.30f);
 
 void Scene::Run() {
     float currentFrame = static_cast<float>(glfwGetTime());
@@ -121,14 +148,54 @@ void Scene::Run() {
 
     ProcessInput();
 
+    if (ImGui::Begin("Input / Camera")) {
+        bool v = m_MouseLook;
+        if (ImGui::Checkbox("Mouse Look (F1)", &v)) {
+            m_MouseLook = v;
+            ApplyMouseLook(m_MouseLook);
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_F1, false)) {
+            m_MouseLook = !m_MouseLook;
+            ApplyMouseLook(m_MouseLook);
+        }
+    }
+    ImGui::End();
+    ImGui::Begin("Light Settings");
+    ImGui::DragFloat3("Light Position", &lightPos[0], 0.1f);
+    ImGui::End();
+
+
     // Enable depth testing for the entire frame by default.
     OpenGLConfigurations::EnableDepthTesting();
 
-    OpenGLConfigurations::SetDepthFunction(DepthMode::LESS_EQUAL);// change depth function so depth test passes when values are equal to depth buffer's content
+    OpenGLConfigurations::SetDepthFunction(DepthMode::LESS);// change depth function so depth test passes when values are equal to depth buffer's content
 
+    //Pass 1 // render to depth buffer
+    OpenGLConfigurations::DisableFaceCulling();
+    glEnable(GL_POLYGON_OFFSET_FILL); glPolygonOffset(2.0f, 2.0f);
+    auto directionalLight = lightManager->GetDirectionalLight(0);
 
+    glm::mat4 lightProjection, lightView;
+    float near_plane = 0.1f, far_plane = 100.0f;
+    lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+    //lightProjection = glm::perspective(glm::radians(camera.Zoom), static_cast<float>(EngineConstants::SCR_WIDTH) / static_cast<float>(EngineConstants::SCR_HEIGHT), 0.1f, 100.0f);
+    lightView = glm::lookAt(lightPos,
+                        glm::vec3(0.0f, 0.0f, 0.0f),
+                        glm::vec3(0.0f, 1.0f, 0.0f));
+    
+    shadowMap->BindToFrameBuffer();
 
-    frameBuffer->BindToFrameBuffer();
+    renderScene(depthShader, lightProjection, lightView);
+
+    shadowMap->UnBind();
+    OpenGLConfigurations::EnableFaceCulling();
+    glDisable(GL_POLYGON_OFFSET_FILL);
+
+    ////Pass 2
+    //glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Lighting Pass");
+
+    frameBuffer->BindToFrameBuffer();  // sets viewport & clears color/depth/stencil
 
     glm::mat4 view = glm::mat4(1.0f);
     glm::mat4 projection;
@@ -137,13 +204,10 @@ void Scene::Run() {
     //camera.ProcessMouseMovement(0, 0, false);
     //camera.Yaw += 180.0f;
     view = camera.GetViewMatrix();
+    depthScreenShader->use();
 
-    ourShader->use();
-    ourShader->setVec3("viewPos", camera.Position);
-    ourShader->setFloat("material.shininess", 64.0f);
-
-    uniformBuffer->SetBufferSubData(0,sizeof(glm::mat4), glm::value_ptr(projection));
-    uniformBuffer->SetBufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+    depthScreenShader->setFloat("near_plane", 0.1f);
+    depthScreenShader->setFloat("far_plane", 100.0f);
 
     Ref<LightComponent> mySpotLight = lightManager->GetSpotLight(0);
     if (mySpotLight)
@@ -153,41 +217,74 @@ void Scene::Run() {
     }
     lightManager->Render();
 
+    ourShader->use();
+    ourShader->setVec3("lightPos", lightPos);
+
+    ourShader->setVec3("viewPos", camera.Position);
+    ourShader->setMat4("lightSpaceMatrix", lightProjection * lightView);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, shadowMap->GetTextureID());
+    ourShader->setInt("shadowMap", 1);
+    glObjectLabel(GL_TEXTURE, shadowMap->GetTextureID(), -1, "ShadowMapDepth");
+
+    renderScene(ourShader,projection, view);
+
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, -0.75f, 0.0f));
+    model = glm::scale(model, glm::vec3(0.5f, 1.0f, 0.5f));
+    ourShader->setMat4("model", model);
+    groundModel->Draw(*ourShader);
     // draw skyBox
-    skybox.Draw();
+
+    //OpenGLConfigurations::SetDepthFunction(DepthMode::LESS_EQUAL);
+    //skybox.Draw();
+    //OpenGLConfigurations::SetDepthFunction(DepthMode::LESS);
+
+    OpenGLConfigurations::DisableFaceCulling();
+
+    lightManager->DrawLights();
+    OpenGLConfigurations::EnableFaceCulling();
+    //glPopDebugGroup();
+
+    // Render ScreenQuad
+    //depthScreenShader->use();
+    //shadowMap->BindToTexture();
+    
+    
+    screenShader->use();
+    frameBuffer->BindToTexture();
+    screenShader->use();
+    screenShader->setInt("screenTexture", 0);
+
+    OpenGLConfigurations::DisableDepthTesting(); // for rendering quad on screen always
+    quadVertexArray->Bind();
+    OpenglRenderer::DrawIndexed(quadVertexArray);
+
+}
+void Scene::ApplyMouseLook(bool enabled)
+{
+    // false => show/free cursor, true => hide/lock cursor
+    Window::GetInstance().SetWindowCursor(!enabled);
+    firstMouse = true; // reset deltas so the first move doesn’t jump
+}
+void Scene::renderScene(Ref<Shader> shader, glm::mat4& projection, glm::mat4& view)
+{
+    uniformBuffer->SetBufferSubData(0, sizeof(glm::mat4), glm::value_ptr(projection));
+    uniformBuffer->SetBufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
 
     float rotationSpeed = 200.0f;
     float floatingSpeed = 5.0f;
     float bendMulti = 6.0f;
 
-    ourShader->use();
+    shader->use();
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
     //model = glm::rotate(model, static_cast<float>(glm::radians(glfwGetTime() * rotationSpeed)), glm::vec3(0.0f, 1.0f, 0.0f));
     //model = glm::rotate(model, static_cast<float>(glm::radians(glm::sin(glfwGetTime() * floatingSpeed) * bendMulti)), glm::vec3(1.0f, 0.0f, 0.0f));
     model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-    ourShader->setMat4("model", model);
+    shader->setMat4("model", model);
 
-    ourModel->Draw(*ourShader);
-
-    model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, -0.75f, 0.0f));
-    model = glm::scale(model, glm::vec3(0.5f, 1.0f, 0.5f));
-    ourShader->setMat4("model", model);
-    groundModel->Draw(*ourShader);
-
-    OpenGLConfigurations::DisableFaceCulling();
-
-    lightManager->DrawLights();
-
-    OpenGLConfigurations::EnableFaceCulling();
-    // Render ScreenQuad
-    screenShader->use();
-    frameBuffer->BindToTexture();
-
-    OpenGLConfigurations::DisableDepthTesting(); // for rendering quad on screen always
-    quadVertexArray->Bind();
-    OpenglRenderer::DrawIndexed(quadVertexArray);
+    ourModel->Draw(*shader);
 
 }
 

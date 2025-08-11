@@ -32,13 +32,14 @@ void Mesh::Draw(Shader& shader)
         std::string uniformName = "material." + TextureTypeToString(tex.type) + "[" + number + "]";
 
         // now set the sampler to the correct texture unit
-        glUniform1i(glGetUniformLocation(shader.ID, uniformName.c_str()), i);
+        shader.setInt(uniformName.c_str(), i);
+        //glUniform1i(glGetUniformLocation(shader.ID, uniformName.c_str()), i);
         // and finally bind the texture
         glBindTexture(GL_TEXTURE_2D, tex.id);
     }
-    glUniform1i(glGetUniformLocation(shader.ID, "material.active_diffuse_maps"), diffuseNr); // pass Length
-    glUniform1i(glGetUniformLocation(shader.ID, "material.active_specular_maps"), specularNr); // pass Length
-    glUniform1i(glGetUniformLocation(shader.ID, "material.active_emission_maps"), emissionNr); // pass Length
+    shader.setInt("material.active_diffuse_maps", diffuseNr);
+    shader.setInt("material.active_specular_maps", specularNr);
+    shader.setInt("material.active_emission_maps", emissionNr);
     // draw mesh
     _vertexArray.Bind();
     glDrawElements(

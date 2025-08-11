@@ -39,14 +39,15 @@ Ref<VertexArray> ShapeGenerator::GenerateSquare()
     return vertexArray;
 }
 
-Ref<VertexArray> ShapeGenerator::GenerateQuad()
+Ref<VertexArray> ShapeGenerator::GenerateQuad(float offsetX, float offsetY, float sizeX, float sizeY)
 {
     static float quadVertices[] = {
-        // positions      // texture Coords
-         1.0f,  1.0f,   1.0f, 1.0f,
-        -1.0f,  1.0f,   0.0f, 1.0f,
-        -1.0f, -1.0f,   0.0f, 0.0f,
-         1.0f, -1.0f,   1.0f, 0.0f
+        // positions                         // texture Coords
+        (1.0f * sizeX) + offsetX,  (1.0f * sizeY) + offsetY,   1.0f, 1.0f,
+        (-1.0f * sizeX) + offsetX,  (1.0f * sizeY) + offsetY,   0.0f, 1.0f,
+        (-1.0f * sizeX) + offsetX,  (-1.0f * sizeY) + offsetY,   0.0f, 0.0f,
+        (1.0f * sizeX) + offsetX,  (-1.0f * sizeY) + offsetY,   1.0f, 0.0f
+
     };
 
     static uint32_t indices[] = {

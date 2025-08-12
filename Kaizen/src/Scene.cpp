@@ -173,14 +173,15 @@ void Scene::Run() {
 
     //Pass 1 // render to depth buffer
     OpenGLConfigurations::DisableFaceCulling();
-    glEnable(GL_POLYGON_OFFSET_FILL); glPolygonOffset(2.0f, 2.0f);
+
     auto directionalLight = lightManager->GetDirectionalLight(0);
+    glm::vec3 shadowCamPos = -directionalLight->direction * 20.f;
 
     glm::mat4 lightProjection, lightView;
-    float near_plane = 0.1f, far_plane = 100.0f;
+    float near_plane = 0.1f, far_plane = 30.0f;
     lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
     //lightProjection = glm::perspective(glm::radians(camera.Zoom), static_cast<float>(EngineConstants::SCR_WIDTH) / static_cast<float>(EngineConstants::SCR_HEIGHT), 0.1f, 100.0f);
-    lightView = glm::lookAt(lightPos,
+    lightView = glm::lookAt(shadowCamPos,
                         glm::vec3(0.0f, 0.0f, 0.0f),
                         glm::vec3(0.0f, 1.0f, 0.0f));
     
@@ -190,7 +191,6 @@ void Scene::Run() {
 
     shadowMap->UnBind();
     OpenGLConfigurations::EnableFaceCulling();
-    glDisable(GL_POLYGON_OFFSET_FILL);
 
     ////Pass 2
     //glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Lighting Pass");
@@ -218,7 +218,6 @@ void Scene::Run() {
     lightManager->Render();
 
     ourShader->use();
-    ourShader->setVec3("lightPos", lightPos);
 
     ourShader->setVec3("viewPos", camera.Position);
     ourShader->setMat4("lightSpaceMatrix", lightProjection * lightView);

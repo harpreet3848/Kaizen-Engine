@@ -87,8 +87,6 @@ uniform sampler2D shadowMap;
 uniform Material material;
 
 
-uniform vec3 lightPos; 
-
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
@@ -114,20 +112,23 @@ float ShadowCalculation(vec4 fragPosLightSpace)
 
     // calculate bias (based on depth map resolution and slope)
     vec3 normal = normalize(Normal);
-    vec3 lightDir = normalize(lightPos - FragPos);
+    vec3 lightDir = normalize(-dirLight.direction);
 
+    float slopeBias  = 0.002 * (1.0 - max(dot(normal, lightDir),0.0));
+    float constBias  = 0.0002;
 
-    float slopeBias  = 0.05 * (1.0 - dot(normal, lightDir));
-    float constBias  = 0.005;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
 
-    float bias = gl_FrontFacing ? max(slopeBias, constBias) : constBias * 0.5;
+    //float receiverPlaneDepthBias  = 1.25 * max(abs(dFdx(projCoords.z)) * texelSize.x,
+                            //abs(dFdy(projCoords.z)) * texelSize.y);
+
+    float bias = constBias + slopeBias;
 
     // check whether current frag pos is in shadow
     // float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
 
     // PCF
     float shadow = 0.0;
-    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
     for(int x = -1; x <= 1; ++x)
     {
         for(int y = -1; y <= 1; ++y)
@@ -182,7 +183,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
 
-    vec3 halfwayVec = normalize(viewDir + lightDir);   // Bling-Phong
+    vec3 halfwayVec = normalize(viewDir + lightDir);   // Blinn-Phong
 
     float spec = pow(max(dot(normal, halfwayVec), 0.0), material.shininess);
 
@@ -204,7 +205,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
-    vec3 halfwayVec = normalize(viewDir + lightDir);   // Bling-Phong
+    vec3 halfwayVec = normalize(viewDir + lightDir);   // Blinn-Phong
     float spec = pow(max(dot(normal, halfwayVec), 0.0), material.shininess);
 
     // attenuation

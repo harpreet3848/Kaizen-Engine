@@ -100,7 +100,6 @@ void FrameBuffer::createDepthOnlyAttachment()
 
 void FrameBuffer::createPostProcessingFBO()
 {
-
     // Gen normal framebuffer for post processing
     glGenFramebuffers(1, &m_PostProcessingFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, m_PostProcessingFBO);
@@ -136,25 +135,25 @@ void FrameBuffer::BindToFrameBuffer() const
 
 }
 
-void FrameBuffer::BindToTexture() const {
+void FrameBuffer::BindToTexture(GLuint bindIndex) const {
 
 	if (m_MultiSampling && !m_IsDepthOnly) 
 	{
-		glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FramebufferID);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_PostProcessingFBO);
-		glBlitFramebuffer(0, 0, m_Width, m_Height, 0, 0, m_Width, m_Height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        GLint prevReadFBO = 0, prevDrawFBO = 0;
+        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &prevReadFBO);
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &prevDrawFBO);
+
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FramebufferID);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_PostProcessingFBO);
+
+        glBlitFramebuffer(0, 0, m_Width, m_Height,0, 0, m_Width, m_Height,GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+        // Restore previous FBO bindings (no surprises for the caller)
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, prevReadFBO);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, prevDrawFBO);
 	}
 
-	UnBind();
-
-	OpenglRenderer::ClearColor();
-    OpenglRenderer::ClearColourBuffer();
-    OpenglRenderer::ClearDepthBuffer();
-
-    if (!m_IsDepthOnly)
-        OpenglRenderer::ClearStencilBuffer();
-
-	glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(bindIndex));
 
 	glBindTexture(GL_TEXTURE_2D, GetTextureID());	// use the color attachment texture as the texture of the quad plane
 

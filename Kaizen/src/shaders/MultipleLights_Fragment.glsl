@@ -6,8 +6,11 @@
 #define MAX_EMISSION_MAPS 4
 
 
+#define MAX_POINT_LIGHTS 4
+#define MAX_SPOT_LIGHTS 4
+
 struct Material {
-    // Add uniforms to hold the count of active textures
+    //holds the count of active textures
     int active_diffuse_maps;
     int active_specular_maps;
     int active_emission_maps;
@@ -69,10 +72,9 @@ in vec3 Normal;
 in vec3 FragPos;  
 in vec3 LightPos; 
 in vec2 TexCoords;
-in vec4 FragPosLightSpace;
+in vec4 FragPosDirLightSpace;
+in vec4 FragPosSpotLightSpace;
 
-#define MAX_POINT_LIGHTS 4
-#define MAX_SPOT_LIGHTS 4
 
 // These tell the shader how many lights in the array are actually active
 uniform int pointLightCount;
@@ -83,9 +85,10 @@ uniform DirLight dirLight;
 uniform PointLight pointLights[MAX_POINT_LIGHTS];
 uniform SpotLight spotLight[MAX_SPOT_LIGHTS];
 
-uniform sampler2D shadowMap;
-uniform Material material;
+layout(binding = 4) uniform sampler2D DirectionalShadowMap;
+layout(binding = 5) uniform sampler2D spotShadowMap;
 
+uniform Material material;
 
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
@@ -96,55 +99,6 @@ vec3 CalDiffuseColor();
 vec3 CalSpecularColor();
 
 
-float ShadowCalculation(vec4 fragPosLightSpace)
-{
-       // perform perspective divide
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-
-    // transform to [0,1] range
-    projCoords = projCoords * 0.5 + 0.5;
-
-    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-    float closestDepth = texture(shadowMap, projCoords.xy).r; 
-
-    // get depth of current fragment from light's perspective
-    float currentDepth = projCoords.z;
-
-    // calculate bias (based on depth map resolution and slope)
-    vec3 normal = normalize(Normal);
-    vec3 lightDir = normalize(-dirLight.direction);
-
-    float slopeBias  = 0.002 * (1.0 - max(dot(normal, lightDir),0.0));
-    float constBias  = 0.0002;
-
-    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-
-    //float receiverPlaneDepthBias  = 1.25 * max(abs(dFdx(projCoords.z)) * texelSize.x,
-                            //abs(dFdy(projCoords.z)) * texelSize.y);
-
-    float bias = constBias + slopeBias;
-
-    // check whether current frag pos is in shadow
-    // float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
-
-    // PCF
-    float shadow = 0.0;
-    for(int x = -1; x <= 1; ++x)
-    {
-        for(int y = -1; y <= 1; ++y)
-        {
-            float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-            shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;        
-        }    
-    }
-    shadow /= 9.0;
-    
-    // keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
-    if(projCoords.z > 1.0)
-        shadow = 0.0;
-        
-    return shadow;
-}
 
 void main()
 {
@@ -173,6 +127,53 @@ void main()
     FragColor = vec4(result + emission, 1.0);
 } 
 
+float DirShadowCalculation(vec4 fragPosLightSpace)
+{
+       // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(DirectionalShadowMap, projCoords.xy).r; 
+
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+
+    // calculate bias (based on depth map resolution and slope)
+    vec3 normal = normalize(Normal);
+    vec3 lightDir = normalize(-dirLight.direction);
+
+    float slopeBias  = 0.002 * (1.0 - max(dot(normal, lightDir),0.0));
+    float constBias  = 0.0002;
+
+    vec2 texelSize = 1.0 / textureSize(DirectionalShadowMap, 0);
+
+    //float receiverPlaneDepthBias  = 1.25 * max(abs(dFdx(projCoords.z)) * texelSize.x,
+                            //abs(dFdy(projCoords.z)) * texelSize.y);
+
+    float bias = constBias + slopeBias;
+
+    // PCF
+    float shadow = 0.0;
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(DirectionalShadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+            shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;        
+        }    
+    }
+    shadow /= 9.0;
+    
+    // keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
+    if(projCoords.z > 1.0)
+        shadow = 0.0;
+        
+    return shadow;
+}
+
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
 {
     vec3 lightDir = normalize(-light.direction);
@@ -192,7 +193,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
     vec3 diffuseComp = light.diffuseIntensity * diff * CalDiffuseColor();
     vec3 specularComp = light.specularIntensity * spec * CalSpecularColor();
 
-    float shadow = ShadowCalculation(FragPosLightSpace);                      
+    float shadow = DirShadowCalculation(FragPosDirLightSpace);                      
     return (ambientComp + (1.0 - shadow) * (diffuseComp + specularComp)) * light.color;
 }
 
@@ -220,7 +221,26 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     return (ambientComp + diffuseComp + specularComp) * attenuation;
 }
 
+float SpotShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 L)
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
 
+    if (projCoords.z > 1.0) return 0.0;
+
+    float slopeBias = 0.002 * (1.0 - max(dot(normal, L), 0.0));
+    float constBias = 0.0002;
+    float bias = constBias + slopeBias;
+
+    vec2 texelSize = 1.0 / vec2(textureSize(spotShadowMap, 0));
+    float shadow = 0.0;
+    for (int x = -1; x <= 1; ++x)
+    for (int y = -1; y <= 1; ++y) {
+        float pcfDepth = texture(spotShadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+        shadow += (projCoords.z - bias > pcfDepth) ? 1.0 : 0.0;
+    }
+    return shadow / 9.0;
+}
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
     vec3 lightDir = normalize(light.position - fragPos);
@@ -250,7 +270,11 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     diffuseComp *= attenuation * intensity;
     specularComp *= attenuation * intensity;
 
-    return (ambientComp + diffuseComp + specularComp);
+    float shadow = SpotShadowCalculation(FragPosSpotLightSpace, normal, lightDir);
+     
+    float vis = 1.0 - shadow;
+
+    return ambientComp + vis * (diffuseComp + specularComp);
 }
 
 vec3 CalDiffuseColor()

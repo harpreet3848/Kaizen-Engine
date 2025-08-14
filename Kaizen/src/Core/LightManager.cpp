@@ -1,4 +1,5 @@
 #include "LightManager.h"
+#include <cassert>
 
 LightManager::LightManager()
 {
@@ -28,16 +29,19 @@ void LightManager::AddSpotLight(const Ref<LightComponent>& spotLight)
 
 Ref<LightComponent> LightManager::GetDirectionalLight(size_t index)
 {
+    assert(index < m_DirectionalLights.size() && "Directional light index out of range");
     return m_DirectionalLights[index];
 }
 
 Ref<LightComponent> LightManager::GetPointLight(size_t index)
 {
+    assert(index < m_PointLights.size() && "Point Lights index out of range");
     return m_PointLights[index];
 }
 
 Ref<LightComponent> LightManager::GetSpotLight(size_t index)
 {
+    assert(index < m_SpotLights.size() && "Spot lights index out of range");
     return m_SpotLights[index];
 }
 

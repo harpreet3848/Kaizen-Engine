@@ -7,7 +7,9 @@ out vec3 FragPos;
 out vec3 Normal;
 out vec2 TexCoords;
 
-out vec4 FragPosLightSpace;
+out vec4 FragPosDirLightSpace;
+out vec4 FragPosSpotLightSpace;
+
 
 layout (std140, binding = 0) uniform Matrices
 {
@@ -16,8 +18,8 @@ layout (std140, binding = 0) uniform Matrices
 };
 
 uniform vec3 lightPos; 
-uniform mat4 lightSpaceMatrix;
-
+uniform mat4 dirLightSpaceMatrix;
+uniform mat4 spotLightSpaceMatrix;
 
 uniform mat4 model;
 
@@ -27,7 +29,8 @@ void main()
     Normal = mat3(transpose(inverse(model))) * aNormal;  
     TexCoords = aTexCoords;
 
-    FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
+    FragPosDirLightSpace = dirLightSpaceMatrix * vec4(FragPos, 1.0);
+    FragPosSpotLightSpace = spotLightSpaceMatrix * vec4(FragPos, 1.0);
 
     gl_Position = projection * view * vec4(FragPos, 1.0);
 }

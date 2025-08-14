@@ -56,10 +56,14 @@ private:
     Ref<Shader> depthShader;
 
     Ref<FrameBuffer> frameBuffer;
-    Ref<FrameBuffer> shadowMap;
+
+    Ref<FrameBuffer> dirShadowMap;
+    Ref<FrameBuffer> spotShadowMap;
 
 
     Ref<VertexArray> quadVertexArray;
+    Ref<VertexArray> smallQuadVertexArray;
+
 
     Ref<LightManager> lightManager;
 

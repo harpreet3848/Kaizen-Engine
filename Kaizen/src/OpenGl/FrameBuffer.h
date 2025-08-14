@@ -15,7 +15,7 @@ public:
 	~FrameBuffer();
 
 	void BindToFrameBuffer() const;
-	void BindToTexture() const;
+	void BindToTexture(GLuint bindIndex) const;
 	void UnBind() const;
 	GLuint GetTextureID() const;
 private:

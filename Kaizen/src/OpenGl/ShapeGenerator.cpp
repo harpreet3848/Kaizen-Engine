@@ -8,7 +8,7 @@
 
 Ref<VertexArray> ShapeGenerator::GenerateSquare()
 {
-    static float vertices[] = {
+    float vertices[] = {
         // positions          // textureCoord 
          0.5f,  0.5f, 0.0f,   1.0f, 1.0f,
          0.5f, -0.5f, 0.0f,   1.0f, 0.0f,
@@ -16,7 +16,7 @@ Ref<VertexArray> ShapeGenerator::GenerateSquare()
         -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,
     };
 
-    static uint32_t indices[] = {
+    uint32_t indices[] = {
         0, 1, 3,  // first Triangle
         1, 2, 3   // second Triangle
     };
@@ -41,7 +41,7 @@ Ref<VertexArray> ShapeGenerator::GenerateSquare()
 
 Ref<VertexArray> ShapeGenerator::GenerateQuad(float offsetX, float offsetY, float sizeX, float sizeY)
 {
-    static float quadVertices[] = {
+    float quadVertices[] = {
         // positions                         // texture Coords
         (1.0f * sizeX) + offsetX,  (1.0f * sizeY) + offsetY,   1.0f, 1.0f,
         (-1.0f * sizeX) + offsetX,  (1.0f * sizeY) + offsetY,   0.0f, 1.0f,
@@ -50,7 +50,7 @@ Ref<VertexArray> ShapeGenerator::GenerateQuad(float offsetX, float offsetY, floa
 
     };
 
-    static uint32_t indices[] = {
+    uint32_t indices[] = {
         1, 2, 3,
         1, 3, 0
     };
@@ -75,7 +75,7 @@ Ref<VertexArray> ShapeGenerator::GenerateQuad(float offsetX, float offsetY, floa
 
 Ref<VertexArray> ShapeGenerator::GenerateCube()
 {
-    static float cubeVertices[] = {
+    float cubeVertices[] = {
         // positions          // texture Coords
         // Back face
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 0
@@ -109,7 +109,7 @@ Ref<VertexArray> ShapeGenerator::GenerateCube()
          -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // 23
     };
 
-    static uint32_t indices[] = {
+    uint32_t indices[] = {
         // Back face
         0, 2, 1, 2, 0, 3,
         // Front face

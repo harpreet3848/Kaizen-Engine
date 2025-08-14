@@ -32,9 +32,9 @@ void Scene::Init() {
         this->MouseCallback(xpos, ypos);
         });
 
-    OpenGLConfigurations::EnableFaceCulling(); 
+  /*  OpenGLConfigurations::EnableFaceCulling(); 
     OpenGLConfigurations::SetFaceCullingMode(FaceCullMode::FRONT);
-    OpenGLConfigurations::SetWindingOrder(WindingOder::CLOCKWISE);
+    OpenGLConfigurations::SetWindingOrder(WindingOder::ANTICLOCKWISE)*/;
     
 
     ourShader = std::make_shared<Shader>("Shaders/lights_Vertex_Shader.glsl", "Shaders/MultipleLights_Fragment.glsl");
@@ -47,7 +47,8 @@ void Scene::Init() {
     groundModel = std::make_shared<Model>("Resources/objects/SimpleGround/Ground.obj", true, false);
     
     frameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,false,true);
-    shadowMap = std::make_shared<FrameBuffer>(4096, 4096, true, false);
+    dirShadowMap = std::make_shared<FrameBuffer>(4096, 4096, true, false);
+    spotShadowMap = std::make_shared<FrameBuffer>(4096, 4096, true, false);
 
     uniformBuffer = std::make_shared<UniformBuffer>(2 * sizeof(glm::mat4));
 
@@ -64,6 +65,7 @@ void Scene::Init() {
     skybox.Init(facesFilepaths);
 
     quadVertexArray = ShapeGenerator::GenerateQuad(0,0,1,1);
+    smallQuadVertexArray = ShapeGenerator::GenerateQuad(-0.75f, -0.75f, 0.25f, 0.25f);
 
     lightManager = std::make_shared<LightManager>();
 
@@ -130,14 +132,9 @@ void Scene::Init() {
     //screenShader->use();
     //screenShader->setInt("screenTexture", 0);
 
-    depthScreenShader->use();
-    depthScreenShader->setInt("depthMap", 0);
 
     //ourShader->use();
     //ourShader->setInt("shadowMap", 0);
-    OpenGLConfigurations::EnableFaceCulling();
-    OpenGLConfigurations::SetWindingOrder(WindingOder::ANTICLOCKWISE);
-    OpenGLConfigurations::SetFaceCullingMode(FaceCullMode::BACK);
 }
 glm::vec3 lightPos(-4.3f, 11.7f, 3.30f);
 
@@ -145,6 +142,12 @@ void Scene::Run() {
     float currentFrame = static_cast<float>(glfwGetTime());
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
+
+    OpenglRenderer::ClearColor();
+    OpenglRenderer::ClearColourBuffer();
+    OpenglRenderer::ClearDepthBuffer();
+
+    OpenglRenderer::ClearStencilBuffer();
 
     ProcessInput();
 
@@ -160,11 +163,14 @@ void Scene::Run() {
             ApplyMouseLook(m_MouseLook);
         }
     }
-    ImGui::End();
-    ImGui::Begin("Light Settings");
-    ImGui::DragFloat3("Light Position", &lightPos[0], 0.1f);
-    ImGui::End();
+    ImGui::End(); 
 
+    Ref<LightComponent> mySpotLight = lightManager->GetSpotLight(0);
+    //if (mySpotLight)
+    //{
+    //    mySpotLight->position = camera.Position;
+    //    mySpotLight->direction = camera.Front;
+    //}
 
     // Enable depth testing for the entire frame by default.
     OpenGLConfigurations::EnableDepthTesting();
@@ -185,14 +191,35 @@ void Scene::Run() {
                         glm::vec3(0.0f, 0.0f, 0.0f),
                         glm::vec3(0.0f, 1.0f, 0.0f));
     
-    shadowMap->BindToFrameBuffer();
+    dirShadowMap->BindToFrameBuffer();
 
     renderScene(depthShader, lightProjection, lightView);
 
-    shadowMap->UnBind();
+    dirShadowMap->UnBind();
     OpenGLConfigurations::EnableFaceCulling();
 
-    ////Pass 2
+    //Pass 2
+    OpenGLConfigurations::DisableFaceCulling();
+
+    float fovDeg = glm::max(2.0f * mySpotLight->outerCutOff, 1.0f);
+    glm::mat4 spotProj = glm::perspective(glm::radians(fovDeg), 1.0f, 0.1f, 100.0f);
+    glm::mat4 spotView = glm::lookAt(
+        mySpotLight->position,
+        mySpotLight->position + glm::normalize(mySpotLight->direction),
+        glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+
+    spotShadowMap->BindToFrameBuffer();
+    renderScene(depthShader, spotProj, spotView);
+    spotShadowMap->UnBind();
+
+    OpenGLConfigurations::EnableFaceCulling();
+
+    // Save for lighting pass
+    glm::mat4 spotLightSpace = spotProj * spotView;
+
+
+    ////Pass 3
     //glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Lighting Pass");
 
     frameBuffer->BindToFrameBuffer();  // sets viewport & clears color/depth/stencil
@@ -209,22 +236,24 @@ void Scene::Run() {
     depthScreenShader->setFloat("near_plane", 0.1f);
     depthScreenShader->setFloat("far_plane", 100.0f);
 
-    Ref<LightComponent> mySpotLight = lightManager->GetSpotLight(0);
-    if (mySpotLight)
-    {
-        mySpotLight->position = camera.Position;
-        mySpotLight->direction = camera.Front;
-    }
+
     lightManager->Render();
 
     ourShader->use();
 
     ourShader->setVec3("viewPos", camera.Position);
-    ourShader->setMat4("lightSpaceMatrix", lightProjection * lightView);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, shadowMap->GetTextureID());
-    ourShader->setInt("shadowMap", 1);
-    glObjectLabel(GL_TEXTURE, shadowMap->GetTextureID(), -1, "ShadowMapDepth");
+    ourShader->setMat4("dirLightSpaceMatrix", lightProjection * lightView);
+    ourShader->setMat4("spotLightSpaceMatrix", spotLightSpace);
+
+
+    constexpr uint32_t SHADOWMAP_TEX_UNIT = 4;
+    dirShadowMap->BindToTexture(SHADOWMAP_TEX_UNIT);
+    ourShader->setInt("DirectionalShadowMap", SHADOWMAP_TEX_UNIT);
+
+    spotShadowMap->BindToTexture(5);
+    ourShader->setInt("spotShadowMap", 5);
+
+    glObjectLabel(GL_TEXTURE, dirShadowMap->GetTextureID(), -1, "ShadowMapDepth");
 
     renderScene(ourShader,projection, view);
 
@@ -240,25 +269,32 @@ void Scene::Run() {
     //OpenGLConfigurations::SetDepthFunction(DepthMode::LESS);
 
     OpenGLConfigurations::DisableFaceCulling();
-
     lightManager->DrawLights();
     OpenGLConfigurations::EnableFaceCulling();
     //glPopDebugGroup();
 
+    frameBuffer->UnBind();
+    
     // Render ScreenQuad
-    //depthScreenShader->use();
-    //shadowMap->BindToTexture();
-    
-    
+    constexpr uint32_t SCREENQUAD_UNIT = 0;
+
+
     screenShader->use();
-    frameBuffer->BindToTexture();
-    screenShader->use();
-    screenShader->setInt("screenTexture", 0);
+    
+    frameBuffer->BindToTexture(SCREENQUAD_UNIT);
+    screenShader->setInt("screenTexture", SCREENQUAD_UNIT);
 
     OpenGLConfigurations::DisableDepthTesting(); // for rendering quad on screen always
     quadVertexArray->Bind();
     OpenglRenderer::DrawIndexed(quadVertexArray);
 
+
+    depthScreenShader->use();
+    spotShadowMap->BindToTexture(SCREENQUAD_UNIT);
+    depthScreenShader->setInt("depthMap", SCREENQUAD_UNIT);
+    OpenGLConfigurations::DisableDepthTesting(); // for rendering quad on screen always
+    smallQuadVertexArray->Bind();
+    OpenglRenderer::DrawIndexed(smallQuadVertexArray);
 }
 void Scene::ApplyMouseLook(bool enabled)
 {

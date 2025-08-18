@@ -32,6 +32,7 @@
 #include "Core/LightBindings.h"
 #include "Core/LightManager.h"
 #include <OpenGl/UniformBuffer.h>
+#include <OpenGl/PointsShadowMap.h>
 
 
 class Scene {
@@ -50,16 +51,20 @@ private:
 
     Ref<Model> groundModel;
     Ref<Model> ourModel;
+    
     Ref<Shader> ourShader;
     Ref<Shader> screenShader;
     Ref<Shader> depthScreenShader;
     Ref<Shader> depthShader;
+    Ref<Shader> pointShadowMapShader;
+
 
     Ref<FrameBuffer> frameBuffer;
 
     Ref<FrameBuffer> dirShadowMap;
     Ref<FrameBuffer> spotShadowMap;
-
+    
+    Ref<PointShadowMap> pointShadowMaps;
 
     Ref<VertexArray> quadVertexArray;
     Ref<VertexArray> smallQuadVertexArray;

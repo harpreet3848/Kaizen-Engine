@@ -17,7 +17,6 @@ layout (std140, binding = 0) uniform Matrices
     mat4 view;
 };
 
-uniform vec3 lightPos; 
 uniform mat4 dirLightSpaceMatrix;
 uniform mat4 spotLightSpaceMatrix;
 

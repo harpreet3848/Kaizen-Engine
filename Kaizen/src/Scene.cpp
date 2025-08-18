@@ -3,7 +3,7 @@
 #include "OpenGl/OpenGLRenderer.h"
 #include "OpenGl/ShapeGenerator.h"
 #include <imgui.h>
-
+#include <array>  
 
 Scene::Scene() : camera(glm::vec3(0.0f, 0.0f, 3.0f)),
                 lastX(static_cast<float>(EngineConstants::SCR_WIDTH) / 2.0f),
@@ -11,9 +11,8 @@ Scene::Scene() : camera(glm::vec3(0.0f, 0.0f, 3.0f)),
                 firstMouse(true),
                 deltaTime(0.0f),
                 lastFrame(0.0f)
-{
+{}
 
-}
 Scene::~Scene() 
 {
     Window::GetInstance().SetCursorPosCallback([](double, double) {});
@@ -41,7 +40,7 @@ void Scene::Init() {
     screenShader = std::make_shared<Shader>("Shaders/framebuffers_screen_Vertex.glsl", "Shaders/framebuffers_screen_Fragment.glsl");
     depthScreenShader = std::make_shared<Shader>("Shaders/ShadowMap/quad_shadowMap_Vertex.glsl", "Shaders/ShadowMap/quad_shadowMap_Fragment.glsl");
     depthShader = std::make_shared<Shader>("Shaders/ShadowMap/shadowMap_depth_Vertex.glsl", "Shaders/ShadowMap/shadowMap_depth_Fragment.glsl");
-
+    pointShadowMapShader = std::make_shared<Shader>("Shaders/ShadowMap/PointShadowGeometry/point_Shadow_Vertex.glsl", "Shaders/ShadowMap/PointShadowGeometry/point_Shadow_Fragment.glsl", "Shaders/ShadowMap/PointShadowGeometry/point_Shadow_Geometry.glsl");
 
     ourModel = std::make_shared<Model>("Resources/objects/medievalCastle/medievalCastle.obj", true, false);
     groundModel = std::make_shared<Model>("Resources/objects/SimpleGround/Ground.obj", true, false);
@@ -49,6 +48,8 @@ void Scene::Init() {
     frameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,false,true);
     dirShadowMap = std::make_shared<FrameBuffer>(4096, 4096, true, false);
     spotShadowMap = std::make_shared<FrameBuffer>(4096, 4096, true, false);
+
+    pointShadowMaps = std::make_shared<PointShadowMap>(4096, 4096);
 
     uniformBuffer = std::make_shared<UniformBuffer>(2 * sizeof(glm::mat4));
 
@@ -88,23 +89,11 @@ void Scene::Init() {
     pointLight->linear = 0.09f;
     pointLight->quadratic = 0.032f;
 
-
-    auto pointLight2 = std::make_shared<LightComponent>();
-    pointLight2->type = LightType::Point;
-    pointLight2->color = glm::vec3(1.0f, 0.0f, 0.0f); // Red light
-    pointLight2->position = glm::vec3(2.0f, 0.2f, 1.0f);
-    pointLight2->ambientIntensity = 0.05f;
-    pointLight2->diffuseIntensity = 0.8f;
-    pointLight2->specularIntensity = 1.0f;
-    pointLight2->constant = 1.0f;
-    pointLight2->linear = 0.09f;
-    pointLight2->quadratic = 0.032f;
-
     auto spotLight = std::make_shared<LightComponent>();
     spotLight->type = LightType::Spot;
     spotLight->color = glm::vec3(0.0f, 1.0f, 0.0f); // Green light
-    spotLight->position = camera.Position;
-    spotLight->direction = camera.Front;
+    spotLight->position = glm::vec3(0.0f, 4.0f, 4.0f);
+    spotLight->direction = glm::vec3(0.0f, -0.7f, -1.0f);
     spotLight->ambientIntensity = 0.0f;
     spotLight->diffuseIntensity = 1.0f;
     spotLight->specularIntensity = 1.0f;
@@ -116,7 +105,6 @@ void Scene::Init() {
 
     lightManager->AddDirectionalLight(directionalLight);
     lightManager->AddPointLight(pointLight);
-    lightManager->AddPointLight(pointLight2);
     lightManager->AddSpotLight(spotLight);
 
     lightManager->SetupLights(ourShader);
@@ -136,7 +124,7 @@ void Scene::Init() {
     //ourShader->use();
     //ourShader->setInt("shadowMap", 0);
 }
-glm::vec3 lightPos(-4.3f, 11.7f, 3.30f);
+glm::vec3 pointLightPos(-4.3f, 11.7f, 3.30f);
 
 void Scene::Run() {
     float currentFrame = static_cast<float>(glfwGetTime());
@@ -148,6 +136,10 @@ void Scene::Run() {
     OpenglRenderer::ClearDepthBuffer();
 
     OpenglRenderer::ClearStencilBuffer();
+
+    OpenGLConfigurations::EnableDepthTesting();
+
+    OpenGLConfigurations::SetDepthFunction(DepthMode::LESS);
 
     ProcessInput();
 
@@ -165,20 +157,49 @@ void Scene::Run() {
     }
     ImGui::End(); 
 
-    Ref<LightComponent> mySpotLight = lightManager->GetSpotLight(0);
-    //if (mySpotLight)
-    //{
-    //    mySpotLight->position = camera.Position;
-    //    mySpotLight->direction = camera.Front;
-    //}
 
-    // Enable depth testing for the entire frame by default.
-    OpenGLConfigurations::EnableDepthTesting();
-
-    OpenGLConfigurations::SetDepthFunction(DepthMode::LESS);// change depth function so depth test passes when values are equal to depth buffer's content
-
-    //Pass 1 // render to depth buffer
     OpenGLConfigurations::DisableFaceCulling();
+
+    //Point Light Pass
+
+        // 0. create depth cubemap transformation matrices
+        // -----------------------------------------------
+    auto pointLight = lightManager->GetPointLight(0);
+
+    pointLightPos = pointLight->position;
+
+    float aspect = (float)4098 / (float)4098;
+    float near = 0.1f;
+    float pointLightFarPlane = 25.0f;
+    glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, pointLightFarPlane);
+    
+    std::array<glm::mat4, 6> shadowTransforms = {
+        shadowProj * glm::lookAt(pointLightPos, pointLightPos + glm::vec3(1.0,  0.0,  0.0), glm::vec3(0.0, -1.0,  0.0)),
+        shadowProj * glm::lookAt(pointLightPos, pointLightPos + glm::vec3(-1.0,  0.0,  0.0), glm::vec3(0.0, -1.0,  0.0)),
+        shadowProj * glm::lookAt(pointLightPos, pointLightPos + glm::vec3(0.0,  1.0,  0.0), glm::vec3(0.0,  0.0,  1.0)),
+        shadowProj * glm::lookAt(pointLightPos, pointLightPos + glm::vec3(0.0, -1.0,  0.0), glm::vec3(0.0,  0.0, -1.0)),
+        shadowProj * glm::lookAt(pointLightPos, pointLightPos + glm::vec3(0.0,  0.0,  1.0), glm::vec3(0.0, -1.0,  0.0)),
+        shadowProj * glm::lookAt(pointLightPos, pointLightPos + glm::vec3(0.0,  0.0, -1.0), glm::vec3(0.0, -1.0,  0.0))
+    };
+        // 1. render scene to depth cubemap
+        // --------------------------------
+
+    pointShadowMaps->BindLayeredForWrite();
+    pointShadowMapShader->use();
+
+    for (unsigned int i = 0; i < 6; ++i)
+        pointShadowMapShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+    
+    pointShadowMapShader->setFloat("far_plane", pointLightFarPlane);
+    pointShadowMapShader->setVec3("lightPos", pointLightPos);
+    glm::mat4 emptyprojection = glm::mat4(1.0f);
+    glm::mat4 emptyview = glm::mat4(1.0f);
+    renderScene(pointShadowMapShader, emptyprojection, emptyview);
+
+    pointShadowMaps->Unbind();
+
+    //Directional Light Pass
+    // render to depth buffer
 
     auto directionalLight = lightManager->GetDirectionalLight(0);
     glm::vec3 shadowCamPos = -directionalLight->direction * 20.f;
@@ -191,16 +212,16 @@ void Scene::Run() {
                         glm::vec3(0.0f, 0.0f, 0.0f),
                         glm::vec3(0.0f, 1.0f, 0.0f));
     
-    dirShadowMap->BindToFrameBuffer();
+    dirShadowMap->BindToFrameBuffer(); 
 
     renderScene(depthShader, lightProjection, lightView);
 
     dirShadowMap->UnBind();
-    OpenGLConfigurations::EnableFaceCulling();
 
-    //Pass 2
-    OpenGLConfigurations::DisableFaceCulling();
+    //Spot Light Pass
+    //render to depth buffer
 
+    Ref<LightComponent> mySpotLight = lightManager->GetSpotLight(0);
     float fovDeg = glm::max(2.0f * mySpotLight->outerCutOff, 1.0f);
     glm::mat4 spotProj = glm::perspective(glm::radians(fovDeg), 1.0f, 0.1f, 100.0f);
     glm::mat4 spotView = glm::lookAt(
@@ -213,19 +234,20 @@ void Scene::Run() {
     renderScene(depthShader, spotProj, spotView);
     spotShadowMap->UnBind();
 
-    OpenGLConfigurations::EnableFaceCulling();
-
     // Save for lighting pass
     glm::mat4 spotLightSpace = spotProj * spotView;
 
+    OpenGLConfigurations::EnableFaceCulling();
 
-    ////Pass 3
+
+    //Render scene as normal
+
     //glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Lighting Pass");
 
     frameBuffer->BindToFrameBuffer();  // sets viewport & clears color/depth/stencil
 
     glm::mat4 view = glm::mat4(1.0f);
-    glm::mat4 projection;
+    glm::mat4 projection = glm::mat4(1.0f);
 
     projection = glm::perspective(glm::radians(camera.Zoom), static_cast<float>(EngineConstants::SCR_WIDTH) / static_cast<float>(EngineConstants::SCR_HEIGHT), 0.1f, 100.0f);
     //camera.ProcessMouseMovement(0, 0, false);
@@ -236,24 +258,31 @@ void Scene::Run() {
     depthScreenShader->setFloat("near_plane", 0.1f);
     depthScreenShader->setFloat("far_plane", 100.0f);
 
-
     lightManager->Render();
 
     ourShader->use();
 
     ourShader->setVec3("viewPos", camera.Position);
+    ourShader->setVec3("lightPos", pointLightPos);
+
     ourShader->setMat4("dirLightSpaceMatrix", lightProjection * lightView);
     ourShader->setMat4("spotLightSpaceMatrix", spotLightSpace);
 
+    ourShader->setFloat("pointLightFarPlane", pointLightFarPlane);
 
-    constexpr uint32_t SHADOWMAP_TEX_UNIT = 4;
-    dirShadowMap->BindToTexture(SHADOWMAP_TEX_UNIT);
-    ourShader->setInt("DirectionalShadowMap", SHADOWMAP_TEX_UNIT);
+    constexpr uint32_t SHADOWDIRMAP_TEX_UNIT = 3;
+    dirShadowMap->BindToTexture(SHADOWDIRMAP_TEX_UNIT);
+    ourShader->setInt("directionalShadowMap", SHADOWDIRMAP_TEX_UNIT);
 
-    spotShadowMap->BindToTexture(5);
-    ourShader->setInt("spotShadowMap", 5);
+    constexpr uint32_t SHADOWSPOTMAP_TEX_UNIT = 4;
 
-    glObjectLabel(GL_TEXTURE, dirShadowMap->GetTextureID(), -1, "ShadowMapDepth");
+    spotShadowMap->BindToTexture(SHADOWSPOTMAP_TEX_UNIT);
+    ourShader->setInt("spotShadowMap[0]", SHADOWSPOTMAP_TEX_UNIT);
+
+    constexpr uint32_t SHADOWPOINTMAP_TEX_UNIT = 8;
+
+    pointShadowMaps->BindToTexture(SHADOWPOINTMAP_TEX_UNIT);
+    ourShader->setInt("pointShadowMap[0]", SHADOWPOINTMAP_TEX_UNIT);
 
     renderScene(ourShader,projection, view);
 
@@ -264,9 +293,9 @@ void Scene::Run() {
     groundModel->Draw(*ourShader);
     // draw skyBox
 
-    //OpenGLConfigurations::SetDepthFunction(DepthMode::LESS_EQUAL);
-    //skybox.Draw();
-    //OpenGLConfigurations::SetDepthFunction(DepthMode::LESS);
+    OpenGLConfigurations::SetDepthFunction(DepthMode::LESS_EQUAL);
+    skybox.Draw();
+    OpenGLConfigurations::SetDepthFunction(DepthMode::LESS);
 
     OpenGLConfigurations::DisableFaceCulling();
     lightManager->DrawLights();
@@ -277,10 +306,8 @@ void Scene::Run() {
     
     // Render ScreenQuad
     constexpr uint32_t SCREENQUAD_UNIT = 0;
-
-
     screenShader->use();
-    
+
     frameBuffer->BindToTexture(SCREENQUAD_UNIT);
     screenShader->setInt("screenTexture", SCREENQUAD_UNIT);
 
@@ -302,6 +329,7 @@ void Scene::ApplyMouseLook(bool enabled)
     Window::GetInstance().SetWindowCursor(!enabled);
     firstMouse = true; // reset deltas so the first move doesn’t jump
 }
+
 void Scene::renderScene(Ref<Shader> shader, glm::mat4& projection, glm::mat4& view)
 {
     uniformBuffer->SetBufferSubData(0, sizeof(glm::mat4), glm::value_ptr(projection));

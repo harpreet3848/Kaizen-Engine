@@ -49,8 +49,8 @@ void LightManager::SetupLights(const Ref<Shader>& shader) { // call it after add
 
     m_SceneShader = shader;
     m_SceneShader->use();
-    m_SceneShader->setInt("pointLightCount", static_cast<int>(m_PointLights.size()));
-    m_SceneShader->setInt("spotLightCount", static_cast<int>(m_SpotLights.size()));
+    m_SceneShader->setInt("activePointLightCount", static_cast<int>(m_PointLights.size()));
+    m_SceneShader->setInt("activeSpotLightCount", static_cast<int>(m_SpotLights.size()));
 }
 
 void LightManager::Render()

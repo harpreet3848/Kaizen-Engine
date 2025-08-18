@@ -29,7 +29,7 @@ void Mesh::Draw(Shader& shader)
         else if (tex.type == TextureType::Height)   number = std::to_string(heightNr++); // transfer unsigned int to string
         else if (tex.type == TextureType::Emission) number = std::to_string(emissionNr++);
 
-        std::string uniformName = "material." + TextureTypeToString(tex.type) + "[" + number + "]";
+        std::string uniformName = "material." + TextureTypeToString(tex.type);
 
         // now set the sampler to the correct texture unit
         shader.setInt(uniformName.c_str(), i);

@@ -12,7 +12,7 @@ public:
     unsigned int ID;
 
     // constructor: builds shader from two file paths
-    Shader(const char* vertexPath, const char* fragmentPath);
+    Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = NULL);
 
     // activate the shader
     void use() const;

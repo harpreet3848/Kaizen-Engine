@@ -1,4 +1,4 @@
-#include "PointsShadowMap.h"
+#include "PointShadowMap.h"
 #include "OpenGLRenderer.h"
 #include <iostream>
 

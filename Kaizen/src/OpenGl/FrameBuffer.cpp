@@ -10,8 +10,8 @@
 static constexpr int MSAA_SAMPLES = 8;
 
 
-FrameBuffer::FrameBuffer(uint32_t width, uint32_t height, bool isDepthOnly, bool multiSampling)
-	: m_Width(width), m_Height (height), m_MultiSampling(multiSampling), m_IsDepthOnly(isDepthOnly)
+FrameBuffer::FrameBuffer(uint32_t width, uint32_t height, bool isDepthOnly, bool multiSampling, bool hdr)
+	: m_Width(width), m_Height (height), m_MultiSampling(multiSampling), m_IsDepthOnly(isDepthOnly) , m_HDR(hdr)
 {
     glGenFramebuffers(1, &m_FramebufferID);
     glBindFramebuffer(GL_FRAMEBUFFER, m_FramebufferID);
@@ -54,13 +54,17 @@ FrameBuffer::~FrameBuffer() {
 
 void FrameBuffer::createColorDepthAttachments()
 {
+    const GLenum internalFmt = m_HDR ? GL_RGBA16F : GL_RGB8;   // 16f is a great default
+    const GLenum dataFmt = m_HDR ? GL_RGBA : GL_RGB;
+    const GLenum dataType = m_HDR ? GL_FLOAT : GL_UNSIGNED_BYTE;
+
     glGenTextures(1, &m_ColorAttachment);
     glBindTexture(m_MultiSampling ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, m_ColorAttachment);
     if (m_MultiSampling) {
-        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_SAMPLES, GL_RGB, m_Width, m_Height, GL_TRUE);
+        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_SAMPLES, internalFmt, m_Width, m_Height, GL_TRUE);
     }
     else {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_Width, m_Height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFmt, m_Width, m_Height, 0, dataFmt, dataType, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
@@ -106,7 +110,12 @@ void FrameBuffer::createPostProcessingFBO()
 
     glGenTextures(1, &m_PostProcessingTCO);
     glBindTexture(GL_TEXTURE_2D, m_PostProcessingTCO);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_Width, m_Height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+    const GLenum internalFmt = m_HDR ? GL_RGBA16F : GL_RGB8;
+    const GLenum dataFmt = m_HDR ? GL_RGBA : GL_RGB;
+    const GLenum dataType = m_HDR ? GL_FLOAT : GL_UNSIGNED_BYTE;
+
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFmt, m_Width, m_Height, 0, dataFmt, dataType, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

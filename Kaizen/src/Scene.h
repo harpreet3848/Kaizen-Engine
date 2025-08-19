@@ -32,7 +32,7 @@
 #include "Core/LightBindings.h"
 #include "Core/LightManager.h"
 #include <OpenGl/UniformBuffer.h>
-#include <OpenGl/PointsShadowMap.h>
+#include <OpenGl/PointShadowMap.h>
 
 
 class Scene {

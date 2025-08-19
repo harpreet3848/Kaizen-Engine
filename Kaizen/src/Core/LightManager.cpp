@@ -95,7 +95,7 @@ void LightManager::DrawLights()
 }
 
 void LightManager::DrawImGuiControls() {
-    ImGui::Begin("Light Manager");
+    ImGui::Begin("Environment");
 
     int id_counter = 0;
 
@@ -138,9 +138,9 @@ void LightManager::DrawLightEditor(Ref<LightComponent> light) {
 
     ImGui::ColorEdit3("Color", &light->color[0]);
 
-    ImGui::DragFloat("Ambient", &light->ambientIntensity, 0.01f, 0.0f, 1.0f);
-    ImGui::DragFloat("Diffuse", &light->diffuseIntensity, 0.01f, 0.0f, 1.0f);
-    ImGui::DragFloat("Specular", &light->specularIntensity, 0.01f, 0.0f, 1.0f);
+    ImGui::DragFloat("Ambient", &light->ambientIntensity, 0.01f, 0.0f, 10.0f);
+    ImGui::DragFloat("Diffuse", &light->diffuseIntensity, 0.01f, 0.0f, 20.0f);
+    ImGui::DragFloat("Specular", &light->specularIntensity, 0.01f, 0.0f, 50.0f);
 
     ImGui::Separator(); // Adds a visual line
 

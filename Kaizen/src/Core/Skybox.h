@@ -15,8 +15,12 @@ public:
 
     void Draw();
 
+    void DrawImGui();
+
 private:
     VertexArray skyboxVertexArray;
     std::unique_ptr<Shader> skyboxShader;
     std::unique_ptr<Cubemap> cubeMap;
+
+    float m_Exposure = 1.0f;
 };

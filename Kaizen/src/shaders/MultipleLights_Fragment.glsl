@@ -74,7 +74,6 @@ uniform int activePointLightCount;
 uniform int activeSpotLightCount;
 
 uniform float pointLightFarPlane;
-uniform vec3 lightPos; 
 uniform vec3 viewPos; 
 uniform DirLight dirLight;
 uniform PointLight pointLights[MAX_POINT_LIGHTS];
@@ -203,9 +202,9 @@ vec3 gridSamplingDisk[20] = vec3[]
    vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
 );
 
-float ShadowPointCalculation(vec3 fragPos, int index)
+float ShadowPointCalculation(vec3 fragPos,vec3 lightPosition , int index)
 {
-    vec3 fragToLight = fragPos - lightPos;
+    vec3 fragToLight = fragPos - lightPosition;
  
   
     float currentDepth = length(fragToLight);
@@ -238,7 +237,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, i
     float diff = max(dot(normal, lightDir), 0.0);
 
     // specular shading
-    vec3 reflectDir = reflect(-lightDir, normal);
+    //vec3 reflectDir = reflect(-lightDir, normal);
     vec3 halfwayVec = normalize(viewDir + lightDir);   // Blinn-Phong
     float spec = pow(max(dot(normal, halfwayVec), 0.0), material.shininess);
 
@@ -247,13 +246,13 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, i
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
 
     // combine results
-    vec3 ambientComp = light.color * light.ambientIntensity * CalDiffuseColor();
-    vec3 diffuseComp = light.color * light.diffuseIntensity * diff * CalDiffuseColor();
-    vec3 specularComp = light.color * light.specularIntensity * spec * CalSpecularColor();
+    vec3 ambientComp = light.ambientIntensity * CalDiffuseColor();
+    vec3 diffuseComp = light.diffuseIntensity * diff * CalDiffuseColor();
+    vec3 specularComp = light.specularIntensity * spec * CalSpecularColor();
 
-    float shadow = ShadowPointCalculation(fragPos,index);
+    float shadow = ShadowPointCalculation(fragPos,light.position,index);
 
-    return (ambientComp + (1.0  - shadow) * (diffuseComp + specularComp)) * attenuation;
+    return (ambientComp + (1.0  - shadow) * (diffuseComp + specularComp)) * attenuation * light.color;
 }
 
 //--------------------------------------------------------------------

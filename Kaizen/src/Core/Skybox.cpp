@@ -1,4 +1,5 @@
 #include "Skybox.h"
+#include <imgui.h>
 
 void Skybox::Init(const std::vector<std::string>& facesFilepaths)
 {
@@ -70,7 +71,7 @@ void Skybox::Init(const std::vector<std::string>& facesFilepaths)
 
 void Skybox::Draw()
 {
-
+    DrawImGui();
 
     bool isSceneCulled = false;
     if (OpenGLConfigurations::IsStateActive(RendererStates::FaceCulling))
@@ -80,6 +81,7 @@ void Skybox::Draw()
     }
 
     skyboxShader->use();
+    skyboxShader->setFloat("skyExposureIntensity",m_Exposure);
     skyboxVertexArray.Bind();
     cubeMap->BindTexture(0);
     OpenglRenderer::DrawTriangles(36);
@@ -88,4 +90,20 @@ void Skybox::Draw()
     {
         OpenGLConfigurations::EnableFaceCulling();
     }
+}
+
+void Skybox::DrawImGui()
+{
+    if (ImGui::Begin("Environment")) {
+        // Wide range with nice feel:
+        ImGui::SliderFloat("Sky Exposure", &m_Exposure, 0.02f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+
+        // Optional quick buttons
+        if (ImGui::Button("Reset")) m_Exposure = 1.0f;
+        ImGui::SameLine();
+        if (ImGui::Button("Half"))  m_Exposure *= 0.5f;
+        ImGui::SameLine();
+        if (ImGui::Button("Double")) m_Exposure *= 2.0f;
+    }
+    ImGui::End();
 }

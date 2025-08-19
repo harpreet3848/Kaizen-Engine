@@ -8,6 +8,7 @@ uniform sampler2D screenTexture;
 
 const float offset = 1.0 / 300.0;  
 
+uniform float exposure;
 
 void main()
 {
@@ -39,8 +40,14 @@ void main()
         col += sampleTex[i] * kernel[i];
 
    //FragColor = vec4(col, 1.0);
-   float gamma = 2.2;
-   vec3 fragColor = vec3(texture(screenTexture, TexCoords));
-   vec3 gammaCorrection = pow(fragColor.xyz,vec3(1.0/gamma));
-   FragColor = vec4(gammaCorrection, 1.0);
+
+    const float gamma = 2.2;
+    vec3 hdrColor = texture(screenTexture, TexCoords).rgb;
+  
+    // exposure tone mapping
+    vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
+    // gamma correction 
+    mapped = pow(mapped, vec3(1.0 / gamma));
+  
+    FragColor = vec4(mapped, 1.0);
 } 

@@ -45,7 +45,7 @@ void Scene::Init() {
     ourModel = std::make_shared<Model>("Resources/objects/medievalCastle/medievalCastle.obj", true, false);
     groundModel = std::make_shared<Model>("Resources/objects/SimpleGround/Ground.obj", true, false);
     
-    frameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,false,true);
+    frameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,false,true,true);
     dirShadowMap = std::make_shared<FrameBuffer>(4096, 4096, true, false);
     spotShadowMap = std::make_shared<FrameBuffer>(4096, 4096, true, false);
 
@@ -117,8 +117,8 @@ void Scene::Init() {
     ourShader->setFloat("material.shininess", 64.0f);
     ourShader->setInt("shadowMap", 0);
 
-    //screenShader->use();
-    //screenShader->setInt("screenTexture", 0);
+    screenShader->use();
+    screenShader->setFloat("exposure", 1.0f);
 
 
     //ourShader->use();
@@ -263,7 +263,7 @@ void Scene::Run() {
     ourShader->use();
 
     ourShader->setVec3("viewPos", camera.Position);
-    ourShader->setVec3("lightPos", pointLightPos);
+    //ourShader->setVec3("lightPos", pointLightPos);
 
     ourShader->setMat4("dirLightSpaceMatrix", lightProjection * lightView);
     ourShader->setMat4("spotLightSpaceMatrix", spotLightSpace);

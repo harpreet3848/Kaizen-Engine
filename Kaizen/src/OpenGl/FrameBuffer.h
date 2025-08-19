@@ -11,7 +11,7 @@ struct FrameBufferSettings
 
 class FrameBuffer {
 public:
-	FrameBuffer(uint32_t width, uint32_t height,bool isDepthOnly, bool multiSampling);
+	FrameBuffer(uint32_t width, uint32_t height,bool isDepthOnly, bool multiSampling, bool hdr = false);
 	~FrameBuffer();
 
 	void BindToFrameBuffer() const;
@@ -30,6 +30,7 @@ private:
 
 	bool m_MultiSampling;
 	bool m_IsDepthOnly;
+	bool m_HDR;
 
 	uint32_t m_Width;
 	uint32_t m_Height;

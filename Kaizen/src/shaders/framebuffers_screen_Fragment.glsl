@@ -4,11 +4,13 @@ out vec4 FragColor;
 
 in vec2 TexCoords;
 
-uniform sampler2D screenTexture;
+layout (binding = 0)uniform sampler2D screenTexture;
+layout (binding = 1)uniform sampler2D bloomBlur;
 
 const float offset = 1.0 / 300.0;  
 
 uniform float exposure;
+uniform bool bloom;
 
 void main()
 {
@@ -44,6 +46,10 @@ void main()
     const float gamma = 2.2;
     vec3 hdrColor = texture(screenTexture, TexCoords).rgb;
   
+    vec3 bloomColor = texture(bloomBlur, TexCoords).rgb;
+    if(bloom)
+        hdrColor += bloomColor;
+
     // exposure tone mapping
     vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
     // gamma correction 

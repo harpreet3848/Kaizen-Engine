@@ -45,10 +45,12 @@ void Scene::Init() {
     ourModel = std::make_shared<Model>("Resources/objects/medievalCastle/medievalCastle.obj", true, false);
     groundModel = std::make_shared<Model>("Resources/objects/SimpleGround/Ground.obj", true, false);
     
-    frameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,false,true,true);
+    frameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,false,true,true,2);
     dirShadowMap = std::make_shared<FrameBuffer>(4096, 4096, true, false);
     spotShadowMap = std::make_shared<FrameBuffer>(4096, 4096, true, false);
 
+    postProcessing = std::make_shared<PostProcessingFX>();
+    
     pointShadowMaps = std::make_shared<PointShadowMap>(4096, 4096);
 
     uniformBuffer = std::make_shared<UniformBuffer>(2 * sizeof(glm::mat4));
@@ -80,7 +82,7 @@ void Scene::Init() {
 
     auto pointLight = std::make_shared<LightComponent>();
     pointLight->type = LightType::Point;
-    pointLight->color = glm::vec3(1.0f, 0.0f, 0.0f); // Red light
+    pointLight->color = glm::vec3(1.0f, 1.0f, 1.0f); // Red light
     pointLight->position = glm::vec3((-2.0f, 0.2f, 1.0f));
     pointLight->ambientIntensity = 0.05f;
     pointLight->diffuseIntensity = 0.8f;
@@ -122,7 +124,7 @@ void Scene::Init() {
 }
 glm::vec3 pointLightPos(-4.3f, 11.7f, 3.30f);
 float exposure = 1.0f;
-
+bool bloom = false;
 void Scene::Run() {
     float currentFrame = static_cast<float>(glfwGetTime());
     deltaTime = currentFrame - lastFrame;
@@ -158,12 +160,14 @@ void Scene::Run() {
 
     ImGui::DragFloat("Exposure", &exposure, 0.1f, 0.0f, 30.0f, "%.1f");
 
+    ImGui::Checkbox("Bloom", &bloom);
+
     ImGui::End();
 
 
     screenShader->use();
     screenShader->setFloat("exposure", exposure);
-
+    screenShader->setInt("bloom", bloom);
     OpenGLConfigurations::DisableFaceCulling();
 
     //Point Light Pass
@@ -307,24 +311,30 @@ void Scene::Run() {
     lightManager->DrawLights();
     OpenGLConfigurations::EnableFaceCulling();
     //glPopDebugGroup();
-
     frameBuffer->UnBind();
+    GLint blurTexture = postProcessing->Blur(frameBuffer);
     
     // Render ScreenQuad
     constexpr uint32_t SCREENQUAD_UNIT = 0;
     screenShader->use();
 
-    frameBuffer->BindToTexture(SCREENQUAD_UNIT);
+    frameBuffer->BindToTexture(SCREENQUAD_UNIT,0);
     screenShader->setInt("screenTexture", SCREENQUAD_UNIT);
+    
+    glActiveTexture(GL_TEXTURE1);
+
+    glBindTexture(GL_TEXTURE_2D, blurTexture);
+
+    screenShader->setInt("blurTexture", 1);
 
     OpenGLConfigurations::DisableDepthTesting(); // for rendering quad on screen always
     quadVertexArray->Bind();
     OpenglRenderer::DrawIndexed(quadVertexArray);
 
-
     depthScreenShader->use();
     spotShadowMap->BindToTexture(SCREENQUAD_UNIT);
     depthScreenShader->setInt("depthMap", SCREENQUAD_UNIT);
+
     OpenGLConfigurations::DisableDepthTesting(); // for rendering quad on screen always
     smallQuadVertexArray->Bind();
     OpenglRenderer::DrawIndexed(smallQuadVertexArray);
@@ -350,7 +360,7 @@ void Scene::renderScene(Ref<Shader> shader, glm::mat4& projection, glm::mat4& vi
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
     //model = glm::rotate(model, static_cast<float>(glm::radians(glfwGetTime() * rotationSpeed)), glm::vec3(0.0f, 1.0f, 0.0f));
     //model = glm::rotate(model, static_cast<float>(glm::radians(glm::sin(glfwGetTime() * floatingSpeed) * bendMulti)), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    model = glm::scale(model, glm::vec3(2.0f, 2.0f, 2.0f));
     shader->setMat4("model", model);
 
     ourModel->Draw(*shader);

@@ -178,7 +178,6 @@ void FrameBuffer::BindToTexture(GLuint bindIndex, GLuint attachmentIndex) const
         attachmentIndex = 0; // safe fallback for release builds
     }
 
-
 	if (m_MultiSampling) 
 	{
         // Resolve this specific attachment into its paired single-sample texture

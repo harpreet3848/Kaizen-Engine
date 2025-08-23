@@ -31,6 +31,8 @@
 #include "Core/Skybox.h"
 #include "Core/LightBindings.h"
 #include "Core/LightManager.h"
+#include "Core/PostProcessingFX.h"
+
 #include <OpenGl/UniformBuffer.h>
 #include <OpenGl/PointShadowMap.h>
 
@@ -69,6 +71,7 @@ private:
     Ref<VertexArray> quadVertexArray;
     Ref<VertexArray> smallQuadVertexArray;
 
+    Ref<PostProcessingFX> postProcessing;
 
     Ref<LightManager> lightManager;
 

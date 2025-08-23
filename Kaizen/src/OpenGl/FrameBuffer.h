@@ -13,6 +13,12 @@ public:
 	void BindToTexture(GLuint bindIndex = 0,GLuint attachmentIndex = 0) const;
 	void UnBind() const;
 	GLuint GetTextureID(GLuint attachmentIndex) const;
+
+private: 
+	void createColorDepthAttachments();
+	void createDepthOnlyAttachment();
+	void createPostProcessingResolve();
+
 private:
 	bool m_MultiSampling;
 	bool m_IsDepthOnly;
@@ -32,11 +38,6 @@ private:
 	GLuint m_ResolveFBO = 0;
 	std::vector<GLuint> m_ResolvedTex; // size == m_ColorAttachments.size()
 
-
 	uint32_t m_Width;
 	uint32_t m_Height;
-
-	void createColorDepthAttachments();
-	void createDepthOnlyAttachment();
-	void createPostProcessingResolve();
 };

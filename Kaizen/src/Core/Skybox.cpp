@@ -95,8 +95,10 @@ void Skybox::Draw()
 void Skybox::DrawImGui()
 {
     if (ImGui::Begin("Environment")) {
+        ImGui::Separator();
+
         // Wide range with nice feel:
-        ImGui::SliderFloat("Sky Exposure", &m_Exposure, 0.02f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Sky Exposure", &m_Exposure, 0.0f, 10.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
 
         // Optional quick buttons
         if (ImGui::Button("Reset")) m_Exposure = 1.0f;

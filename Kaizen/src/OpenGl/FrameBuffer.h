@@ -4,38 +4,39 @@
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
 
-struct FrameBufferSettings 
-{
-	bool multiSampling;
-};
-
 class FrameBuffer {
 public:
-	FrameBuffer(uint32_t width, uint32_t height,bool isDepthOnly, bool multiSampling, bool hdr = false);
+	FrameBuffer(uint32_t width, uint32_t height,bool isDepthOnly, bool multiSampling, bool hdr = false, int colorAttachmentCount = 1);
 	~FrameBuffer();
 
 	void BindToFrameBuffer() const;
-	void BindToTexture(GLuint bindIndex) const;
+	void BindToTexture(GLuint bindIndex = 0,GLuint attachmentIndex = 0) const;
 	void UnBind() const;
-	GLuint GetTextureID() const;
+	GLuint GetTextureID(GLuint attachmentIndex) const;
 private:
+	bool m_MultiSampling;
+	bool m_IsDepthOnly;
+	bool m_HDR;
+
 	uint32_t m_FramebufferID;
 	uint32_t m_RenderbufferID;
+	GLuint m_DepthAttachment;
 
 	uint32_t m_PostProcessingFBO;
 	uint32_t m_PostProcessingTCO;
 
-	GLuint m_ColorAttachment;
-	GLuint m_DepthAttachment;
+	std::vector<GLuint> m_ColorAttachment;
 
-	bool m_MultiSampling;
-	bool m_IsDepthOnly;
-	bool m_HDR;
+	uint32_t m_ColorCount;
+
+	GLuint m_ResolveFBO = 0;
+	std::vector<GLuint> m_ResolvedTex; // size == m_ColorAttachments.size()
+
 
 	uint32_t m_Width;
 	uint32_t m_Height;
 
 	void createColorDepthAttachments();
 	void createDepthOnlyAttachment();
-	void createPostProcessingFBO();
+	void createPostProcessingResolve();
 };

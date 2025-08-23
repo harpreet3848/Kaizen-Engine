@@ -5,13 +5,14 @@
 #include "Core/EngineConstansts.h"
 #include "OpenGLRenderer.h"
 #include "OpenGLConfigurations.h"
+#include <cassert>
 
 
 static constexpr int MSAA_SAMPLES = 8;
 
 
-FrameBuffer::FrameBuffer(uint32_t width, uint32_t height, bool isDepthOnly, bool multiSampling, bool hdr)
-	: m_Width(width), m_Height (height), m_MultiSampling(multiSampling), m_IsDepthOnly(isDepthOnly) , m_HDR(hdr)
+FrameBuffer::FrameBuffer(uint32_t width, uint32_t height, bool isDepthOnly, bool multiSampling, bool hdr, int colorAttachmentCount)
+	: m_Width(width), m_Height (height), m_MultiSampling(multiSampling), m_IsDepthOnly(isDepthOnly) , m_HDR(hdr), m_ColorCount(std::max<uint32_t>(isDepthOnly ? 0u : colorAttachmentCount, 0u))
 {
     glGenFramebuffers(1, &m_FramebufferID);
     glBindFramebuffer(GL_FRAMEBUFFER, m_FramebufferID);
@@ -32,7 +33,7 @@ FrameBuffer::FrameBuffer(uint32_t width, uint32_t height, bool isDepthOnly, bool
 
 	if (multiSampling && !isDepthOnly) 
     {
-        createPostProcessingFBO();
+        createPostProcessingResolve();
 	}
 
 }
@@ -40,15 +41,19 @@ FrameBuffer::FrameBuffer(uint32_t width, uint32_t height, bool isDepthOnly, bool
 FrameBuffer::~FrameBuffer() {
     glDeleteFramebuffers(1, &m_FramebufferID);
     if (!m_IsDepthOnly) {
-        glDeleteRenderbuffers(1, &m_RenderbufferID);
-        glDeleteTextures(1, &m_ColorAttachment);
-        if (m_MultiSampling) {
-            glDeleteTextures(1, &m_PostProcessingTCO);
-            glDeleteFramebuffers(1, &m_PostProcessingFBO);
+        if (m_RenderbufferID) glDeleteRenderbuffers(1, &m_RenderbufferID);
+
+        if (!m_ColorAttachment.empty()) glDeleteTextures((GLsizei)m_ColorAttachment.size(), m_ColorAttachment.data());
+
+        if (m_ResolveFBO) {
+            glDeleteFramebuffers(1, &m_ResolveFBO);
+        }
+        if (!m_ResolvedTex.empty()) {
+            glDeleteTextures((GLsizei)m_ResolvedTex.size(), m_ResolvedTex.data());
         }
     }
     else {
-        glDeleteTextures(1, &m_DepthAttachment);
+        if (m_DepthAttachment) glDeleteTextures(1, &m_DepthAttachment);
     }
 }
 
@@ -58,17 +63,35 @@ void FrameBuffer::createColorDepthAttachments()
     const GLenum dataFmt = m_HDR ? GL_RGBA : GL_RGB;
     const GLenum dataType = m_HDR ? GL_FLOAT : GL_UNSIGNED_BYTE;
 
-    glGenTextures(1, &m_ColorAttachment);
-    glBindTexture(m_MultiSampling ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, m_ColorAttachment);
-    if (m_MultiSampling) {
-        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_SAMPLES, internalFmt, m_Width, m_Height, GL_TRUE);
+    m_ColorAttachment.resize(m_ColorCount, 0);
+    
+    glGenTextures((GLsizei)m_ColorAttachment.size(), m_ColorAttachment.data());
+    
+    const GLenum target = m_MultiSampling ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
+
+
+    for (uint32_t i = 0; i < m_ColorCount; i++)
+    {
+        glBindTexture(target, m_ColorAttachment[i]);
+        if (m_MultiSampling) {
+            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_SAMPLES, internalFmt, m_Width, m_Height, GL_TRUE);
+        }
+        else {
+            glTexImage2D(GL_TEXTURE_2D, 0, internalFmt, m_Width, m_Height, 0, dataFmt, dataType, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        }
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, target, m_ColorAttachment[i], 0);
     }
-    else {
-        glTexImage2D(GL_TEXTURE_2D, 0, internalFmt, m_Width, m_Height, 0, dataFmt, dataType, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    }
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_MultiSampling ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, m_ColorAttachment, 0);
+    
+    
+    std::vector<GLenum> drawBuffers(m_ColorCount);
+    for (uint32_t i = 0; i < m_ColorCount; ++i)
+        drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
+    glDrawBuffers((GLsizei)drawBuffers.size(), drawBuffers.data());
+    
 
     // 2. Create Depth/Stencil Renderbuffer
     glGenRenderbuffers(1, &m_RenderbufferID);
@@ -102,30 +125,26 @@ void FrameBuffer::createDepthOnlyAttachment()
     glReadBuffer(GL_NONE);
 }
 
-void FrameBuffer::createPostProcessingFBO()
+void FrameBuffer::createPostProcessingResolve()
 {
-    // Gen normal framebuffer for post processing
-    glGenFramebuffers(1, &m_PostProcessingFBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_PostProcessingFBO);
-
-    glGenTextures(1, &m_PostProcessingTCO);
-    glBindTexture(GL_TEXTURE_2D, m_PostProcessingTCO);
+    glGenFramebuffers(1, &m_ResolveFBO);
 
     const GLenum internalFmt = m_HDR ? GL_RGBA16F : GL_RGB8;
     const GLenum dataFmt = m_HDR ? GL_RGBA : GL_RGB;
     const GLenum dataType = m_HDR ? GL_FLOAT : GL_UNSIGNED_BYTE;
 
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFmt, m_Width, m_Height, 0, dataFmt, dataType, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_PostProcessingTCO, 0);
+    m_ResolvedTex.resize(m_ColorCount, 0);
 
-    GLenum fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (fboStatus != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "Post-Processing Framebuffer error: " << fboStatus << std::endl;
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glGenTextures((GLsizei)m_ResolvedTex.size(), m_ResolvedTex.data());
+
+    for (uint32_t i = 0; i < m_ColorCount; ++i) {
+        glBindTexture(GL_TEXTURE_2D, m_ResolvedTex[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFmt, m_Width, m_Height, 0, dataFmt, dataType, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
 }
 
 void FrameBuffer::BindToFrameBuffer() const 
@@ -141,42 +160,72 @@ void FrameBuffer::BindToFrameBuffer() const
 
     if(!m_IsDepthOnly)
         OpenglRenderer::ClearStencilBuffer();
-
 }
 
-void FrameBuffer::BindToTexture(GLuint bindIndex) const {
+void FrameBuffer::BindToTexture(GLuint bindIndex, GLuint attachmentIndex) const 
+{
+    if (m_IsDepthOnly) {
+        glActiveTexture(GL_TEXTURE0 + bindIndex);
+        glBindTexture(GL_TEXTURE_2D, m_DepthAttachment);
+        return;
+    }
 
-	if (m_MultiSampling && !m_IsDepthOnly) 
+    if (attachmentIndex >= m_ColorCount) 
+    {
+#ifndef NDEBUG
+        assert(false && "FrameBuffer: attachmentIndex out of range");
+#endif
+        attachmentIndex = 0; // safe fallback for release builds
+    }
+
+
+	if (m_MultiSampling) 
 	{
+        // Resolve this specific attachment into its paired single-sample texture
+       
+        // Store FBO bindings
         GLint prevReadFBO = 0, prevDrawFBO = 0;
         glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &prevReadFBO);
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &prevDrawFBO);
 
+        // Read from multisample FBO, COLOR_ATTACHMENTi
         glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FramebufferID);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_PostProcessingFBO);
+        glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
 
-        glBlitFramebuffer(0, 0, m_Width, m_Height,0, 0, m_Width, m_Height,GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        // Attach the target single-sample texture as COLOR_ATTACHMENT0 on resolve FBO
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_ResolveFBO);
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, m_ResolvedTex[attachmentIndex], 0);
 
-        // Restore previous FBO bindings (no surprises for the caller)
+        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+        // Copies to m_FramebufferID
+        glBlitFramebuffer(0, 0, m_Width, m_Height,0, 0, m_Width, m_Height,
+                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+        // Restore previous FBO bindings
         glBindFramebuffer(GL_READ_FRAMEBUFFER, prevReadFBO);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, prevDrawFBO);
-	}
 
-    glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(bindIndex));
-
-	glBindTexture(GL_TEXTURE_2D, GetTextureID());	// use the color attachment texture as the texture of the quad plane
-
-	//glDrawArrays(GL_TRIANGLES, 0, 6);
+        glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(bindIndex));
+        glBindTexture(GL_TEXTURE_2D, m_ResolvedTex[attachmentIndex]);
+    }
+    else {
+        glActiveTexture(GL_TEXTURE0 + bindIndex);
+        glBindTexture(GL_TEXTURE_2D, m_ColorAttachment[attachmentIndex]);
+    }
 }
 
 void FrameBuffer::UnBind() const
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-GLuint FrameBuffer::GetTextureID() const
+GLuint FrameBuffer::GetTextureID(GLuint attachmentIndex) const
 {
-    if (m_IsDepthOnly) {
-        return m_DepthAttachment;
-    }
-    return m_MultiSampling ? m_PostProcessingTCO : m_ColorAttachment;
+    if (m_IsDepthOnly) return m_DepthAttachment;
+
+    if (attachmentIndex >= m_ColorCount) attachmentIndex = 0;
+    if (m_MultiSampling)
+        return m_ResolvedTex.empty() ? 0 : m_ResolvedTex[attachmentIndex];
+    return m_ColorAttachment[attachmentIndex];
 }

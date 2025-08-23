@@ -173,7 +173,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
     float diff = max(dot(normal, lightDir), 0.0);
 
     // specular shading
-    vec3 reflectDir = reflect(-lightDir, normal);
+    //vec3 reflectDir = reflect(-lightDir, normal);
 
     vec3 halfwayVec = normalize(viewDir + lightDir);   // Blinn-Phong
 
@@ -205,10 +205,8 @@ vec3 gridSamplingDisk[20] = vec3[]
 float ShadowPointCalculation(vec3 fragPos,vec3 lightPosition , int index)
 {
     vec3 fragToLight = fragPos - lightPosition;
- 
-  
-    float currentDepth = length(fragToLight);
 
+    float currentDepth = length(fragToLight);
     
     float shadow = 0.0;
     float bias = 0.15;
@@ -259,16 +257,18 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, i
 //-------------------------Spot Light----------------------------------
 //---------------------------------------------------------------------
 
-float SpotShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 L, int index)
+float SpotShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir, int index)
 {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
 
     if (projCoords.z > 1.0) return 0.0;
+    
+    float slopeBias  = 0.002 * (1.0 - max(dot(normal, lightDir),0.0));
+    float constBias  = 0.0002;
 
-    float slopeBias = 0.002 * (1.0 - max(dot(normal, L), 0.0));
-    float constBias = 0.0002;
     float bias = constBias + slopeBias;
+
 
     vec2 texelSize = 1.0 / vec2(textureSize(spotShadowMap[index], 0));
     float shadow = 0.0;
@@ -291,7 +291,7 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, int
     float diff = max(dot(normal, lightDir), 0.0);
 
     // specular shading
-    vec3 reflectDir = reflect(-lightDir, normal);
+    //vec3 reflectDir = reflect(-lightDir, normal);
     vec3 halfwayVec = normalize(viewDir + lightDir); // Blinn-Phong
     float spec = pow(max(dot(normal, halfwayVec), 0.0), material.shininess);
     // attenuation

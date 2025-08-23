@@ -117,14 +117,11 @@ void Scene::Init() {
     ourShader->setFloat("material.shininess", 64.0f);
     ourShader->setInt("shadowMap", 0);
 
-    screenShader->use();
-    screenShader->setFloat("exposure", 1.0f);
-
-
     //ourShader->use();
     //ourShader->setInt("shadowMap", 0);
 }
 glm::vec3 pointLightPos(-4.3f, 11.7f, 3.30f);
+float exposure = 1.0f;
 
 void Scene::Run() {
     float currentFrame = static_cast<float>(glfwGetTime());
@@ -157,6 +154,15 @@ void Scene::Run() {
     }
     ImGui::End(); 
 
+    ImGui::Begin("Environment");
+
+    ImGui::DragFloat("Exposure", &exposure, 0.1f, 0.0f, 30.0f, "%.1f");
+
+    ImGui::End();
+
+
+    screenShader->use();
+    screenShader->setFloat("exposure", exposure);
 
     OpenGLConfigurations::DisableFaceCulling();
 

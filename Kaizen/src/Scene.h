@@ -61,7 +61,7 @@ private:
     Ref<Shader> pointShadowMapShader;
 
 
-    Ref<FrameBuffer> frameBuffer;
+    Ref<FrameBuffer> screenFrameBuffer;
 
     Ref<FrameBuffer> dirShadowMap;
     Ref<FrameBuffer> spotShadowMap;

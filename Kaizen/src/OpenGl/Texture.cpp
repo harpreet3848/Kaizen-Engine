@@ -7,24 +7,6 @@
 
 #include "Core/Core.h"
 
-std::string TextureTypeToString(TextureType textureType)
-{
-    switch (textureType)
-    {
-    case Diffuse:
-        return "texture_diffuse";
-    case Specular:
-        return "texture_specular";
-    case Normal:
-        return "texture_normal";
-    case Height:
-        return "texture_height";
-    case Emission:
-        return "texture_emission";
-    }
-    return "";
-}
-
 Texture::Texture(const char* filePath,const TextureSettings& textureSettings)
 {
     // Generate & bind
@@ -77,4 +59,22 @@ void Texture::ActivateAndBind(GLuint unit) const
 GLuint Texture::GetId() const 
 {
     return m_textureId;
+}
+
+std::string TextureTypeToString(TextureType textureType)
+{
+    switch (textureType)
+    {
+    case Diffuse:
+        return "texture_diffuse";
+    case Specular:
+        return "texture_specular";
+    case Normal:
+        return "texture_normal";
+    case Height:
+        return "texture_height";
+    case Emission:
+        return "texture_emission";
+    }
+    return "";
 }

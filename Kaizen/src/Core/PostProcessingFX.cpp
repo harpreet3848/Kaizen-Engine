@@ -15,13 +15,14 @@ PostProcessingFX::~PostProcessingFX()
 {
 }
 
-GLint PostProcessingFX::Blur(Ref<FrameBuffer> screenFrameBuffer)
+Ref<FrameBuffer> PostProcessingFX::Blur(Ref<FrameBuffer> hdrFrameBuffer, GLint attachmentIndex)
 {
     bool horizontal = true;
     int amount = 10;
 
-    screenFrameBuffer->BindToTexture(0, 1); 
-    GLint inputTex = screenFrameBuffer->GetTextureID(1);
+    hdrFrameBuffer->BindToTexture(0, attachmentIndex);
+    GLint inputTex = hdrFrameBuffer->GetTextureID(attachmentIndex);
+
     shaderBlur->use();
     shaderBlur->setInt("image", 0);
 
@@ -40,13 +41,12 @@ GLint PostProcessingFX::Blur(Ref<FrameBuffer> screenFrameBuffer)
         quadVertices->Bind();
         OpenglRenderer::DrawIndexed(quadVertices);
 
+        // Next pass reads from what we just wrote
         inputTex = target->GetTextureID(0);
 
         horizontal = !horizontal;
     }
-    GLuint blurredTex = (horizontal ? pingFBO : pongFBO )->GetTextureID(0);
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    return blurredTex;
+    return horizontal ? pingFBO : pongFBO;
 }

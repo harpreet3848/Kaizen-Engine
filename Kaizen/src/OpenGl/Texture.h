@@ -27,8 +27,6 @@ enum class TextureFilterMode {
     LinearMipmapLinear = GL_LINEAR_MIPMAP_LINEAR
 };
 
-std::string TextureTypeToString(TextureType textureType);
-
 struct TextureSettings {
     TextureType textureType;
 
@@ -52,6 +50,8 @@ struct TextureSettings {
     }
 };
 
+std::string TextureTypeToString(TextureType textureType);
+
 class Texture {
 private:
     GLuint m_textureId;
@@ -64,3 +64,4 @@ public:
 
     GLuint GetId() const;
 };
+

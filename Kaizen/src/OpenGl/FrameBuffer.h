@@ -28,7 +28,6 @@ private:
 	uint32_t m_RenderbufferID;
 	GLuint m_DepthAttachment;
 
-	uint32_t m_PostProcessingFBO;
 	uint32_t m_PostProcessingTCO;
 
 	std::vector<GLuint> m_ColorAttachment;

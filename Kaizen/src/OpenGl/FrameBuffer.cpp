@@ -210,7 +210,7 @@ void FrameBuffer::BindToTexture(GLuint bindIndex, GLuint attachmentIndex) const
         glBindTexture(GL_TEXTURE_2D, m_ResolvedTex[attachmentIndex]);
     }
     else {
-        glActiveTexture(GL_TEXTURE0 + bindIndex);
+        glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(bindIndex));
         glBindTexture(GL_TEXTURE_2D, m_ColorAttachment[attachmentIndex]);
     }
 }

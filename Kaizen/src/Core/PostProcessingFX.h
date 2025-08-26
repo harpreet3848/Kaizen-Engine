@@ -16,7 +16,7 @@ public:
     PostProcessingFX();
     ~PostProcessingFX();
 
-    GLint Blur(Ref<FrameBuffer> screenFrameBuffer);
+    Ref<FrameBuffer> Blur(Ref<FrameBuffer> screenFrameBuffer, GLint attachmentIndex);
 private:
     Ref<FrameBuffer> pingFBO;
     Ref<FrameBuffer> pongFBO;

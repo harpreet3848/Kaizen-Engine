@@ -67,14 +67,32 @@ std::string TextureTypeToString(TextureType textureType)
     {
     case Diffuse:
         return "texture_diffuse";
-    case Specular:
-        return "texture_specular";
     case Normal:
         return "texture_normal";
-    case Height:
-        return "texture_height";
+    case Specular:
+        return "texture_specular";
     case Emission:
         return "texture_emission";
+    case Height:
+        return "texture_height";
     }
     return "";
+}
+
+int GetBindingIndex(TextureType textureType) 
+{
+    switch (textureType)
+    {
+    case Diffuse:
+        return 0;
+    case Normal:
+        return 1;
+    case Specular:
+        return 2;
+    case Emission:
+        return 3;
+   /* case Height:
+        return 4;*/
+    }
+    return -1;
 }

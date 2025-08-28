@@ -18,7 +18,6 @@ void Mesh::Draw(Shader& shader)
 
     for (unsigned int i = 0; i < _textures.size(); i++)
     {
-        glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
         const auto& tex = _textures[i];
 
         // retrieve texture number (the N in diffuse_textureN)
@@ -29,15 +28,17 @@ void Mesh::Draw(Shader& shader)
         else if (tex.type == TextureType::Height)   number = std::to_string(heightNr++); // transfer unsigned int to string
         else if (tex.type == TextureType::Emission) number = std::to_string(emissionNr++);
 
-        std::string uniformName = "material." + TextureTypeToString(tex.type);
+        std::string uniformName = TextureTypeToString(tex.type);
 
         // now set the sampler to the correct texture unit
-        shader.setInt(uniformName.c_str(), i);
+        shader.setInt(uniformName.c_str(), GetBindingIndex(tex.type));
         //glUniform1i(glGetUniformLocation(shader.ID, uniformName.c_str()), i);
         // and finally bind the texture
+        glActiveTexture(GL_TEXTURE0 + GetBindingIndex(tex.type)); // active proper texture unit before binding
         glBindTexture(GL_TEXTURE_2D, tex.id);
     }
     shader.setInt("material.active_diffuse_maps", diffuseNr);
+    shader.setInt("material.active_normal_maps", normalNr);
     shader.setInt("material.active_specular_maps", specularNr);
     shader.setInt("material.active_emission_maps", emissionNr);
     // draw mesh

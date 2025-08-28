@@ -10,3 +10,4 @@ d 1.000000
 illum 1
 map_Kd UFO_BaseColor.png
 map_Ke UFO_Emissive.png
+map_Bump -bm 1.000000 UFO_Normal.png

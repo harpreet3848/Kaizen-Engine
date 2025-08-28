@@ -4,7 +4,7 @@
 #include "OpenGl/ShapeGenerator.h"
 #include <imgui.h>
 #include <array>  
-
+#include <fstream>  
 Scene::Scene() : camera(glm::vec3(0.0f, 0.0f, 3.0f)),
                 lastX(static_cast<float>(EngineConstants::SCR_WIDTH) / 2.0f),
                 lastY(static_cast<float>(EngineConstants::SCR_HEIGHT) / 2.0f),
@@ -34,9 +34,8 @@ void Scene::Init() {
   /*  OpenGLConfigurations::EnableFaceCulling(); 
     OpenGLConfigurations::SetFaceCullingMode(FaceCullMode::FRONT);
     OpenGLConfigurations::SetWindingOrder(WindingOder::ANTICLOCKWISE)*/;
-    
 
-    ourShader = std::make_shared<Shader>("Shaders/lights_Vertex_Shader.glsl", "Shaders/MultipleLights_Fragment.glsl");
+    ourShader = std::make_shared<Shader>("Shaders/MultipleLights_Vertex.glsl", "Shaders/MultipleLights_Fragment.glsl");
     screenShader = std::make_shared<Shader>("Shaders/Post_Screen_Vertex.glsl", "Shaders/Post_Screen_Fragment.glsl");
     depthScreenShader = std::make_shared<Shader>("Shaders/ShadowMap/quad_shadowMap_Vertex.glsl", "Shaders/ShadowMap/quad_shadowMap_Fragment.glsl");
     depthShader = std::make_shared<Shader>("Shaders/ShadowMap/shadowMap_depth_Vertex.glsl", "Shaders/ShadowMap/shadowMap_depth_Fragment.glsl");
@@ -44,7 +43,7 @@ void Scene::Init() {
                                                     "Shaders/ShadowMap/PointShadowGeometry/point_Shadow_Fragment.glsl", 
                                                     "Shaders/ShadowMap/PointShadowGeometry/point_Shadow_Geometry.glsl");
 
-    ourModel = std::make_shared<Model>("Resources/objects/medievalCastle/medievalCastle.obj", true, false);
+    ourModel = std::make_shared<Model>("Resources/objects/HaloModel/Halo_Characeter.obj", true, false);
     groundModel = std::make_shared<Model>("Resources/objects/SimpleGround/Ground.obj", true, false);
     
     screenFrameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,false,true,true,2);
@@ -121,6 +120,7 @@ void Scene::Init() {
     ourShader->setFloat("material.shininess", 64.0f);
     ourShader->setInt("shadowMap", 0);
 
+
     //ourShader->use();
     //ourShader->setInt("shadowMap", 0);
 }
@@ -160,6 +160,9 @@ void Scene::Run()
 
     static float exposure = 1.0f;
     static bool bloom = false;
+    static bool Normal = true;
+    ourShader->use();
+    ourShader->setBool("IsNormal", Normal);
 
     ImGui::Begin("Environment");
     
@@ -167,7 +170,12 @@ void Scene::Run()
 
     ImGui::Checkbox("Bloom", &bloom);
 
+    ImGui::Checkbox("Normal", &Normal);
+
+    ImGui::DragFloat("CameraSpeed", &camera.MovementSpeed);
+    
     ImGui::End();
+
 
 
     screenShader->use();
@@ -282,15 +290,15 @@ void Scene::Run()
 
     ourShader->setFloat("pointLightFarPlane", pointLightFarPlane);
 
-    constexpr uint32_t SHADOWDIRMAP_TEX_UNIT = 3;
+    constexpr uint32_t SHADOWDIRMAP_TEX_UNIT = 4;
     dirShadowMap->BindToTexture(SHADOWDIRMAP_TEX_UNIT);
     ourShader->setInt("directionalShadowMap", SHADOWDIRMAP_TEX_UNIT);
 
-    constexpr uint32_t SHADOWSPOTMAP_TEX_UNIT = 4;
+    constexpr uint32_t SHADOWSPOTMAP_TEX_UNIT = 5;
     spotShadowMap->BindToTexture(SHADOWSPOTMAP_TEX_UNIT);
     ourShader->setInt("spotShadowMap[0]", SHADOWSPOTMAP_TEX_UNIT);
 
-    constexpr uint32_t SHADOWPOINTMAP_TEX_UNIT = 8;
+    constexpr uint32_t SHADOWPOINTMAP_TEX_UNIT = 9;
     pointShadowMaps->BindToTexture(SHADOWPOINTMAP_TEX_UNIT);
     ourShader->setInt("pointShadowMap[0]", SHADOWPOINTMAP_TEX_UNIT);
 
@@ -357,10 +365,10 @@ void Scene::renderScene(Ref<Shader> shader, glm::mat4& projection, glm::mat4& vi
 
     shader->use();
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    model = glm::translate(model, glm::vec3(0.0f, 2.0f, 0.0f));
     //model = glm::rotate(model, static_cast<float>(glm::radians(glfwGetTime() * rotationSpeed)), glm::vec3(0.0f, 1.0f, 0.0f));
     //model = glm::rotate(model, static_cast<float>(glm::radians(glm::sin(glfwGetTime() * floatingSpeed) * bendMulti)), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(2.0f, 2.0f, 2.0f));
+    model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
     shader->setMat4("model", model);
 
     ourModel->Draw(*shader);

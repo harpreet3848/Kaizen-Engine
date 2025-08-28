@@ -9,7 +9,7 @@ LightManager::LightManager()
 
     lightVAO = ShapeGenerator::GenerateCube();
 
-    lightCubeShader = std::make_shared<Shader>("Shaders/lights_Vertex_Shader.glsl", "Shaders/lightColor_Fragment.glsl");
+    lightCubeShader = std::make_shared<Shader>("Shaders/MultipleLights_Vertex.glsl", "Shaders/lightColor_Fragment.glsl");
 }
 
 void LightManager::AddDirectionalLight(const Ref<LightComponent>& directionalLight)
@@ -41,7 +41,7 @@ Ref<LightComponent> LightManager::GetPointLight(size_t index)
 
 Ref<LightComponent> LightManager::GetSpotLight(size_t index)
 {
-    assert(index < m_SpotLights.size() && "Spot lights index out of range");
+    assert(index < m_SpotLights.size() && "Spot lights index out of  range");
     return m_SpotLights[index];
 }
 

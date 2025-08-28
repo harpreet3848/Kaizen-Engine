@@ -2,6 +2,9 @@
 **/bin/
 bin-int/
 
+# Model
+Kaizen/src/Resources/objects/HaloModel/
+
 # Visual Studio files and folder
 .vs/
 **.sln

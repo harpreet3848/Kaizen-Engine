@@ -8,7 +8,7 @@
 #include <cassert>
 
 
-static constexpr int MSAA_SAMPLES = 8;
+static constexpr int MSAA_SAMPLES = 32;
 
 
 FrameBuffer::FrameBuffer(uint32_t width, uint32_t height, bool isDepthOnly, bool multiSampling, bool hdr, int colorAttachmentCount)

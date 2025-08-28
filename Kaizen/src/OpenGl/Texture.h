@@ -5,8 +5,8 @@
 
 enum TextureType {
     Diffuse,
-    Specular,
     Normal,
+    Specular,
     Height,
     Emission
 };
@@ -51,6 +51,7 @@ struct TextureSettings {
 };
 
 std::string TextureTypeToString(TextureType textureType);
+int GetBindingIndex(TextureType textureType);
 
 class Texture {
 private:

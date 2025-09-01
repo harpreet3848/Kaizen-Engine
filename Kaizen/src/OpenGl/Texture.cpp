@@ -91,8 +91,8 @@ int GetBindingIndex(TextureType textureType)
         return 2;
     case Emission:
         return 3;
-   /* case Height:
-        return 4;*/
+    case Height:
+        return 4;
     }
     return -1;
 }

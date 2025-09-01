@@ -10,7 +10,7 @@ layout (binding = 1)uniform sampler2D bloomBlur;
 const float offset = 1.0 / 300.0;  
 
 uniform float exposure;
-uniform bool bloom;
+uniform bool useBloom;
 
 void main()
 {
@@ -47,7 +47,7 @@ void main()
     vec3 hdrColor = texture(screenTexture, TexCoords).rgb;
   
     vec3 bloomColor = texture(bloomBlur, TexCoords).rgb;
-    if(bloom)
+    if(useBloom)
         hdrColor += bloomColor;
 
     // exposure tone mapping

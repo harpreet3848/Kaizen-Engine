@@ -40,6 +40,7 @@ void Mesh::Draw(Shader& shader)
     shader.setInt("material.active_diffuse_maps", diffuseNr);
     shader.setInt("material.active_normal_maps", normalNr);
     shader.setInt("material.active_specular_maps", specularNr);
+    shader.setInt("material.active_height_maps", heightNr);
     shader.setInt("material.active_emission_maps", emissionNr);
     // draw mesh
     _vertexArray.Bind();

@@ -148,8 +148,13 @@ std::unique_ptr<Mesh> Model::processMesh(aiMesh* mesh, const aiScene* scene)
     // normal
     auto normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, TextureType::Normal);
     textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+
+    if (normalMaps.empty()) {
+        auto heightMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, TextureType::Normal);
+        textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+    }
     // height
-    auto heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, TextureType::Height);
+    auto heightMaps = loadMaterialTextures(material, aiTextureType_DISPLACEMENT, TextureType::Height);
     textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
     auto emissionMaps = loadMaterialTextures(material, aiTextureType_EMISSIVE, TextureType::Emission);

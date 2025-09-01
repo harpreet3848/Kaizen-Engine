@@ -43,7 +43,7 @@ void Scene::Init() {
                                                     "Shaders/ShadowMap/PointShadowGeometry/point_Shadow_Fragment.glsl", 
                                                     "Shaders/ShadowMap/PointShadowGeometry/point_Shadow_Geometry.glsl");
 
-    ourModel = std::make_shared<Model>("Resources/objects/HaloModel/Halo_Characeter.obj", true, false);
+    ourModel = std::make_shared<Model>("Resources/objects/Bricks/BrickGround.obj", true, false);
     groundModel = std::make_shared<Model>("Resources/objects/SimpleGround/Ground.obj", true, false);
     
     screenFrameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,false,true,true,2);
@@ -159,28 +159,30 @@ void Scene::Run()
 
 
     static float exposure = 1.0f;
-    static bool bloom = false;
-    static bool Normal = true;
-    ourShader->use();
-    ourShader->setBool("IsNormal", Normal);
+    static float height_scale = 0.1f;
+    static bool useParallelMapping = true;
+    static bool useBloom = false;
+    static bool useNormal = true;
 
     ImGui::Begin("Environment");
     
     ImGui::DragFloat("Exposure", &exposure, 0.1f, 0.0f, 30.0f, "%.1f");
 
-    ImGui::Checkbox("Bloom", &bloom);
+    ImGui::Checkbox("useBloom", &useBloom);
 
-    ImGui::Checkbox("Normal", &Normal);
+    ImGui::Checkbox("useParallelMapping", &useParallelMapping);
+
+    ImGui::Checkbox("useNormal", &useNormal);
+
+    ImGui::DragFloat("height_scale", &height_scale,0.01f);
 
     ImGui::DragFloat("CameraSpeed", &camera.MovementSpeed);
     
     ImGui::End();
 
-
-
     screenShader->use();
     screenShader->setFloat("exposure", exposure);
-    screenShader->setInt("bloom", bloom);
+    screenShader->setInt("useBloom", useBloom);
     OpenGLConfigurations::DisableFaceCulling();
 
     //Point Light Pass
@@ -289,16 +291,20 @@ void Scene::Run()
     ourShader->setMat4("spotLightSpaceMatrix", spotLightSpace);
 
     ourShader->setFloat("pointLightFarPlane", pointLightFarPlane);
+    ourShader->setFloat("height_scale", height_scale);
+    ourShader->setFloat("useParallelMapping", useParallelMapping);
 
-    constexpr uint32_t SHADOWDIRMAP_TEX_UNIT = 4;
+    ourShader->setBool("useNormal", useNormal);
+
+    constexpr uint32_t SHADOWDIRMAP_TEX_UNIT = 5;
     dirShadowMap->BindToTexture(SHADOWDIRMAP_TEX_UNIT);
     ourShader->setInt("directionalShadowMap", SHADOWDIRMAP_TEX_UNIT);
 
-    constexpr uint32_t SHADOWSPOTMAP_TEX_UNIT = 5;
+    constexpr uint32_t SHADOWSPOTMAP_TEX_UNIT = 6;
     spotShadowMap->BindToTexture(SHADOWSPOTMAP_TEX_UNIT);
     ourShader->setInt("spotShadowMap[0]", SHADOWSPOTMAP_TEX_UNIT);
 
-    constexpr uint32_t SHADOWPOINTMAP_TEX_UNIT = 9;
+    constexpr uint32_t SHADOWPOINTMAP_TEX_UNIT = 10;
     pointShadowMaps->BindToTexture(SHADOWPOINTMAP_TEX_UNIT);
     ourShader->setInt("pointShadowMap[0]", SHADOWPOINTMAP_TEX_UNIT);
 
@@ -368,7 +374,7 @@ void Scene::renderScene(Ref<Shader> shader, glm::mat4& projection, glm::mat4& vi
     model = glm::translate(model, glm::vec3(0.0f, 2.0f, 0.0f));
     //model = glm::rotate(model, static_cast<float>(glm::radians(glfwGetTime() * rotationSpeed)), glm::vec3(0.0f, 1.0f, 0.0f));
     //model = glm::rotate(model, static_cast<float>(glm::radians(glm::sin(glfwGetTime() * floatingSpeed) * bendMulti)), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+    model = glm::scale(model, glm::vec3(1.0f, 1.f, 1.f));
     shader->setMat4("model", model);
 
     ourModel->Draw(*shader);

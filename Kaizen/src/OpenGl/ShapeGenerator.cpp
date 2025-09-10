@@ -5,7 +5,6 @@
 #include "Buffer.h" // For BufferLayout
 
 
-
 Ref<VertexArray> ShapeGenerator::GenerateSquare()
 {
     float vertices[] = {

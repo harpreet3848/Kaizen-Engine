@@ -3,6 +3,19 @@
 #define MAX_POINT_LIGHTS 4
 #define MAX_SPOT_LIGHTS 4
 
+layout (location = 0)out vec4 FragColor;
+layout (location = 1) out vec4 BrightColor;
+
+layout (binding = 0) uniform sampler2D texture_diffuse;
+layout (binding = 1) uniform sampler2D texture_normal;
+layout (binding = 2) uniform sampler2D texture_specular;
+layout (binding = 3) uniform sampler2D texture_emission;
+layout (binding = 4) uniform sampler2D texture_height;
+
+layout(binding = 5) uniform sampler2D directionalShadowMap;
+layout(binding = 6) uniform sampler2D spotShadowMap[MAX_SPOT_LIGHTS];
+layout(binding = 10) uniform samplerCube pointShadowMap[MAX_POINT_LIGHTS];
+
 struct Material {
     //holds the count of active textures
     int active_diffuse_maps;
@@ -13,12 +26,6 @@ struct Material {
 
     float shininess;
 };
-
-layout (binding = 0) uniform sampler2D texture_diffuse;
-layout (binding = 1) uniform sampler2D texture_normal;
-layout (binding = 2) uniform sampler2D texture_specular;
-layout (binding = 3) uniform sampler2D texture_emission;
-layout (binding = 4) uniform sampler2D texture_height;
 
 struct DirLight
 {
@@ -63,9 +70,6 @@ struct SpotLight {
 
 };
 
-layout (location = 0)out vec4 FragColor;
-layout (location = 1) out vec4 BrightColor;
-
 in VS_OUT {
     vec3 FragPos;
     vec2 TexCoords;
@@ -74,9 +78,6 @@ in VS_OUT {
     vec4 FragPosSpotLightSpace;
 } fs_in;
 
-layout(binding = 5) uniform sampler2D directionalShadowMap;
-layout(binding = 6) uniform sampler2D spotShadowMap[MAX_SPOT_LIGHTS];
-layout(binding = 10) uniform samplerCube pointShadowMap[MAX_POINT_LIGHTS];
 
 // These tell the shader how many lights in the array are actually active
 uniform int activePointLightCount;
@@ -94,6 +95,8 @@ uniform bool useParallelMapping;
 
 uniform float height_scale;
 
+vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir);
+
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir,vec2 texCoods);
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir,vec2 texCoods, int index);
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir,vec2 texCoods,  int index);
@@ -101,6 +104,67 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir,vec2
 vec3 CalDiffuseColor(vec2 texCoords);
 vec3 CalSpecularColor(vec2 texCoords);
 
+
+void main()
+{
+
+    vec2 texCoords;
+    if(material.active_height_maps > 0 && useParallelMapping)
+    {
+        vec3 viewDirTangentSpace = normalize(viewPos - fs_in.FragPos); 	
+        viewDirTangentSpace = transpose(fs_in.TBN) * viewDirTangentSpace;
+        viewDirTangentSpace.y *= -1.0;
+
+        texCoords = ParallaxMapping(fs_in.TexCoords,  viewDirTangentSpace);
+        if(texCoords.x > 1.0 || texCoords.y > 1.0 || texCoords.x < 0.0 || texCoords.y < 0.0)
+            discard;
+    }else
+    {
+        texCoords = fs_in.TexCoords;
+    }
+
+    if (material.active_diffuse_maps > 0 &&
+        texture(texture_diffuse, texCoords).a < 0.1) discard;
+    
+    vec3 N;
+    if (material.active_normal_maps > 0 && useNormal) 
+    {
+        vec3 nrm = texture(texture_normal, texCoords).rgb * 2.0 - 1.0;
+        N = normalize(fs_in.TBN * nrm);
+    } else {
+        // fs_in.TBN’s third column is the world normal
+        N = normalize(fs_in.TBN[2]);
+    }
+
+    vec3 norm = N;
+    vec3 viewDir = normalize(viewPos - fs_in.FragPos); 	
+    
+    vec3 result = vec3(0.0);
+
+    // phase 1: Directional light
+    result = CalcDirLight(dirLight, norm, viewDir,texCoords);
+
+    // phase 2: point lights
+    for(int i = 0; i < activePointLightCount; i++)
+        result += CalcPointLight(pointLights[i], norm, fs_in.FragPos, viewDir, texCoords, i);    
+
+    // phase 3: spot light
+    for(int i = 0; i < activeSpotLightCount; i++)
+        result += CalcSpotLight(spotLight[i], norm, fs_in.FragPos, viewDir, texCoords,i);
+        
+    vec3 emission = vec3(0.0);
+    if (material.active_emission_maps > 0)
+        emission = texture(texture_emission, texCoords).rgb;
+
+    FragColor = vec4(result + emission, 1.0);
+
+    // brightness threshold for blur 
+    float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+    if(brightness > 1.0)
+        BrightColor = vec4(FragColor.rgb, 1.0);
+    else
+        BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
+} 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir)
 {
     viewDir = normalize(viewDir);
@@ -145,66 +209,6 @@ vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir)
     return finalTexCoords;
 } 
 
-void main()
-{
-
-    vec2 texCoords;
-    if(material.active_height_maps > 0 && useParallelMapping)
-    {
-        vec3 viewDirTangentSpace = normalize(viewPos - fs_in.FragPos); 	
-        viewDirTangentSpace = transpose(fs_in.TBN) * viewDirTangentSpace;
-        viewDirTangentSpace.y *= -1.0;
-
-        texCoords = ParallaxMapping(fs_in.TexCoords,  viewDirTangentSpace);
-        if(texCoords.x > 1.0 || texCoords.y > 1.0 || texCoords.x < 0.0 || texCoords.y < 0.0)
-            discard;
-    }else
-    {
-        texCoords = fs_in.TexCoords;
-    }
-
-    if (material.active_diffuse_maps > 0 &&
-        texture(texture_diffuse, texCoords).a < 0.1) discard;
-    
-    vec3 N;
-    if (material.active_normal_maps > 0 && useNormal) 
-    {
-        vec3 nrm = texture(texture_normal, texCoords).rgb * 2.0 - 1.0;
-        N = normalize(fs_in.TBN * nrm);
-    } else {
-        // fs_in.TBN’s third column is the world normal if TBN is built correctly
-        N = normalize(fs_in.TBN[2]);
-    }
-
-    vec3 norm = N;
-    vec3 viewDir = normalize(viewPos - fs_in.FragPos); 	
-    
-    vec3 result = vec3(0.0);
-
-    // phase 1: Directional light
-    result = CalcDirLight(dirLight, norm, viewDir,texCoords);
-
-    // phase 2: point lights
-    for(int i = 0; i < activePointLightCount; i++)
-        result += CalcPointLight(pointLights[i], norm, fs_in.FragPos, viewDir, texCoords, i);    
-
-    // phase 3: spot light
-    for(int i = 0; i < activeSpotLightCount; i++)
-        result += CalcSpotLight(spotLight[i], norm, fs_in.FragPos, viewDir, texCoords,i);
-        
-    vec3 emission = vec3(0.0);
-    if (material.active_emission_maps > 0)
-        emission = texture(texture_emission, texCoords).rgb;
-
-    FragColor = vec4(result + emission, 1.0);
-
-
-    float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-    if(brightness > 1.0)
-        BrightColor = vec4(FragColor.rgb, 1.0);
-    else
-        BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
-} 
 
 //--------------------------------------------------------------------
 //-------------------------Dir Light----------------------------------

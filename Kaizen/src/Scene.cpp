@@ -157,6 +157,9 @@ void Scene::Run()
     }
     ImGui::End(); 
 
+    static int effect = 0;
+
+    static float edgeThreshold = 0.25f;
 
     static float exposure = 1.0f;
     static float height_scale = 0.1f;
@@ -164,25 +167,39 @@ void Scene::Run()
     static bool useBloom = false;
     static bool useNormal = true;
 
+    const char* modes[] = {
+    "None","Box Blur 3x3","Gaussian 3x3","Sobel (edges)"
+    };
+
     ImGui::Begin("Environment");
-    
-    ImGui::DragFloat("Exposure", &exposure, 0.1f, 0.0f, 30.0f, "%.1f");
 
-    ImGui::Checkbox("useBloom", &useBloom);
+    ImGui::Combo("Effect", &effect, modes, IM_ARRAYSIZE(modes));
 
-    ImGui::Checkbox("useParallelMapping", &useParallelMapping);
+    ImGui::SeparatorText("Effect Params");
+
+    if (effect == 4) {
+        ImGui::SliderFloat("Edge Threshold", &edgeThreshold, 0.0f, 1.0f, "%.2f");
+    }
 
     ImGui::Checkbox("useNormal", &useNormal);
-
-    ImGui::DragFloat("height_scale", &height_scale,0.01f);
-
+    ImGui::Separator();
+    ImGui::Checkbox("useParallelMapping", &useParallelMapping);
+    ImGui::DragFloat("height_scale", &height_scale, 0.001f, 0.0f, 0.2f);
+    ImGui::SeparatorText("Post FX");
+    ImGui::Checkbox("useBloom", &useBloom);
+    ImGui::DragFloat("Exposure", &exposure, 0.1f, 0.0f, 30.0f, "%.1f");
+ 
+    ImGui::Separator();
     ImGui::DragFloat("CameraSpeed", &camera.MovementSpeed);
     
     ImGui::End();
 
     screenShader->use();
-    screenShader->setFloat("exposure", exposure);
     screenShader->setInt("useBloom", useBloom);
+    screenShader->setFloat("exposure", exposure);
+    screenShader->setInt("uEffect", effect);
+    screenShader->setFloat("uEdgeThreshold", edgeThreshold);
+
     OpenGLConfigurations::DisableFaceCulling();
 
     //Point Light Pass

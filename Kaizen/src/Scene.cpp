@@ -43,7 +43,7 @@ void Scene::Init() {
                                                     "Shaders/ShadowMap/PointShadowGeometry/point_Shadow_Fragment.glsl", 
                                                     "Shaders/ShadowMap/PointShadowGeometry/point_Shadow_Geometry.glsl");
 
-    ourModel = std::make_shared<Model>("Resources/objects/Bricks/BrickGround.obj", true, false);
+    ourModel = std::make_shared<Model>("Resources/objects/medievalCastle/medievalCastle.obj", true, false);
     groundModel = std::make_shared<Model>("Resources/objects/SimpleGround/Ground.obj", true, false);
     
     screenFrameBuffer = std::make_shared<FrameBuffer>(EngineConstants::SCR_WIDTH,EngineConstants::SCR_HEIGHT,false,true,true,2);
@@ -362,13 +362,13 @@ void Scene::Run()
     quadVertexArray->Bind();
     OpenglRenderer::DrawIndexed(quadVertexArray);
 
-    depthScreenShader->use();
-    spotShadowMap->BindToTexture(SCREENQUAD_UNIT);
-    depthScreenShader->setInt("depthMap", SCREENQUAD_UNIT);
+    //depthScreenShader->use();
+    //spotShadowMap->BindToTexture(SCREENQUAD_UNIT);
+    //depthScreenShader->setInt("depthMap", SCREENQUAD_UNIT);
 
-    OpenGLConfigurations::DisableDepthTesting(); // for rendering quad on screen always
-    smallQuadVertexArray->Bind();
-    OpenglRenderer::DrawIndexed(smallQuadVertexArray);
+    //OpenGLConfigurations::DisableDepthTesting(); // for rendering quad on screen always
+    //smallQuadVertexArray->Bind();
+    //OpenglRenderer::DrawIndexed(smallQuadVertexArray);
 }
 void Scene::ApplyMouseLook(bool enabled)
 {
@@ -388,10 +388,10 @@ void Scene::renderScene(Ref<Shader> shader, glm::mat4& projection, glm::mat4& vi
 
     shader->use();
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 2.0f, 0.0f));
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
     //model = glm::rotate(model, static_cast<float>(glm::radians(glfwGetTime() * rotationSpeed)), glm::vec3(0.0f, 1.0f, 0.0f));
     //model = glm::rotate(model, static_cast<float>(glm::radians(glm::sin(glfwGetTime() * floatingSpeed) * bendMulti)), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(1.0f, 1.f, 1.f));
+    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
     shader->setMat4("model", model);
 
     ourModel->Draw(*shader);
